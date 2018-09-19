@@ -10,6 +10,7 @@ package main
 
 // import external libaries
 import (
+	"bytes"
 	"errors"
 	"flag"
 	"fmt"
@@ -24,6 +25,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+	"net/smtp"
 	"net/url"
 
 	"github.com/TheSp1der/goerror"
@@ -124,8 +126,9 @@ func stockMonitor() {
 	for {
 
 		var (
-			o         int = 0
-			c         int = 0
+			err       error
+			o         int
+			c         int
 			sleepTime time.Duration
 		)
 
@@ -159,6 +162,16 @@ func stockMonitor() {
 			sleepTime = time.Duration(time.Second * 5)
 		} else {
 			sleepTime = open.Sub(ct)
+
+			var stockData iex
+			if stockData, err = getPrices(); err != nil {
+				goerror.Warning(err)
+			}
+
+			if err = sendMail(cmdLnEmailHost+":"+strconv.Itoa(cmdLnEmailPort), cmdLnEmailAddress, cmdLnEmailFrom, "Stock Alert", printPrices(stockData, false)); err != nil {
+				goerror.Warning(err)
+			}
+
 			fmt.Println("Market is currently closed.")
 			fmt.Println("Script will resume at " + time.Now().Add(time.Duration(sleepTime)).Format(timeFormat) + " which is in " + strconv.FormatFloat(sleepTime.Seconds(), 'f', 0, 64) + " seconds.")
 		}
@@ -174,36 +187,72 @@ func stockCurrent() {
 		stockData iex
 	)
 
-	// get stock data
 	if stockData, err = getPrices(); err != nil {
 		goerror.Warning(err)
 	}
 
-	// sort
-	keys := make([]string, 0, len(stockData))
-	for k := range stockData {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-
-	// print current prices
-	fmt.Println("Stock report as of " + color.BlueString(time.Now().Format(timeFormat)))
-	fmt.Println("Company" + "\t\t" + "Current Price" + "\t" + "Change")
-	for _, k := range keys {
-		if stockData[k].Quote.Change < 0 {
-			fmt.Println(stockData[k].Company.Symbol + "\t\t" + strconv.FormatFloat(stockData[k].Price, 'f', 2, 64) + "\t\t" + color.RedString(strconv.FormatFloat(stockData[k].Quote.Change, 'f', 2, 64)) + "\t\t" + stockData[k].Company.CompanyName)
-		} else if stockData[k].Quote.Change > 0 {
-			fmt.Println(stockData[k].Company.Symbol + "\t\t" + strconv.FormatFloat(stockData[k].Price, 'f', 2, 64) + "\t\t" + color.GreenString(strconv.FormatFloat(stockData[k].Quote.Change, 'f', 2, 64)) + "\t\t" + stockData[k].Company.CompanyName)
-		} else {
-			fmt.Println(stockData[k].Company.Symbol + "\t\t" + strconv.FormatFloat(stockData[k].Price, 'f', 2, 64) + "\t\t\t\t" + stockData[k].Company.CompanyName)
-		}
-	}
+	fmt.Println(printPrices(stockData, true))
 
 	var shares float64 = 865
 	investment := (shares * 44.51)
 	value := (shares * stockData["BP"].Price)
 
 	fmt.Println("\n" + strconv.FormatFloat(value-investment, 'f', 2, 64))
+}
+
+func printPrices(stockData iex, text bool) string {
+	var (
+		output string
+	)
+
+	keys := make([]string, 0, len(stockData))
+	for k := range stockData {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	if text {
+		output += "Stock report as of " + color.BlueString(time.Now().Format(timeFormat)) + "\n"
+		output += "Company" + "\t\t" + "Current Price" + "\t" + "Change" + "\n"
+		for _, k := range keys {
+			if stockData[k].Quote.Change < 0 {
+				output += stockData[k].Company.Symbol + "\t\t" + strconv.FormatFloat(stockData[k].Price, 'f', 2, 64) + "\t\t" + color.RedString(strconv.FormatFloat(stockData[k].Quote.Change, 'f', 2, 64)) + "\t\t" + stockData[k].Company.CompanyName + "\n"
+			} else if stockData[k].Quote.Change > 0 {
+				output += stockData[k].Company.Symbol + "\t\t" + strconv.FormatFloat(stockData[k].Price, 'f', 2, 64) + "\t\t" + color.GreenString(strconv.FormatFloat(stockData[k].Quote.Change, 'f', 2, 64)) + "\t\t" + stockData[k].Company.CompanyName + "\n"
+			} else {
+				output += stockData[k].Company.Symbol + "\t\t" + strconv.FormatFloat(stockData[k].Price, 'f', 2, 64) + "\t\t\t\t" + stockData[k].Company.CompanyName + "\n"
+			}
+		}
+	} else {
+		output += "<span style=\"font-weight: bold;\">Stock report as of " + time.Now().Format(timeFormat) + "</span><br>\n"
+		output += "<table>\n"
+		output += "\t<tr>\n"
+		output += "\t\t<th style=\"text-align: left;\">Company</th>\n"
+		output += "\t\t<th style=\"text-align: left;\">Closing Price</th>\n"
+		output += "\t\t<th style=\"text-align: left;\">Change</th>\n"
+		output += "\t</tr>\n"
+		for _, k := range keys {
+			output += "\t<tr>\n"
+			output += "\t\t<td><a href=\"https://finviz.com/chart.ashx?t=" + stockData[k].Company.Symbol + "\">" + stockData[k].Company.CompanyName + "</a></td>\n"
+			output += "\t\t<td>" + strconv.FormatFloat(stockData[k].Price, 'f', 2, 64) + "</td>\n"
+			if stockData[k].Quote.Change < 0 {
+				output += "\t\t<td><span style=\"color: red;\">" + strconv.FormatFloat(stockData[k].Quote.Change, 'f', 2, 64) + "</span></td>\n"
+			} else if stockData[k].Quote.Change > 0 {
+				output += "\t\t<td><span style=\"color: green;\">" + strconv.FormatFloat(stockData[k].Quote.Change, 'f', 2, 64) + "</span></td>\n"
+			} else {
+				output += "\t\t<td>" + strconv.FormatFloat(stockData[k].Quote.Change, 'f', 2, 64) + "</td>\n"
+			}
+			output += "\t</tr>\n"
+		}
+		output += "</table>"
+		output += "<br>"
+		output += "<span style=\"font-weight: bold;\">Graphs:</span><br>"
+		for _, k := range keys {
+			output += "<img src=\"https://finviz.com/chart.ashx?t=" + stockData[k].Company.Symbol + "\"><br>"
+		}
+	}
+
+	return output
 }
 
 func getPrices() (iex, error) {
@@ -284,4 +333,45 @@ func httpGet(url string, header httpHeader) ([]byte, error) {
 	defer resp.Body.Close()
 
 	return output, nil
+}
+
+func sendMail(host string, to string, from string, subject string, body string) error {
+	var message string
+
+	// connect to the remote server
+	client, err := smtp.Dial(host)
+	if err != nil {
+		return err
+	}
+	defer client.Close()
+
+	// set sender and and recipient
+	client.Mail(from)
+	client.Rcpt(to)
+
+	// send the body
+	mailContent, err := client.Data()
+	if err != nil {
+		return err
+	}
+	defer mailContent.Close()
+
+	message = "From: " + from + "\n"
+	message += "To: " + to + "\n"
+	message += "Subject: " + subject + "\n"
+	message += "MIME-Version: 1.0\n"
+	message += "Content-Type: text/html; charset=UTF-8\n"
+	message += "<html>\n"
+	message += "<body>\n"
+	message += body
+	message += "</body>\n"
+	message += "</html>\n"
+	message += "\n"
+
+	buf := bytes.NewBufferString(message)
+	if _, err = buf.WriteTo(mailContent); err != nil {
+		return err
+	}
+
+	return nil
 }
