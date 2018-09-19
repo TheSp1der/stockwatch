@@ -233,7 +233,7 @@ func printPrices(stockData iex, text bool) string {
 		output += "\t</tr>\n"
 		for _, k := range keys {
 			output += "\t<tr>\n"
-			output += "\t\t<td><a href=\"https://finviz.com/chart.ashx?t=" + stockData[k].Company.Symbol + "\">" + stockData[k].Company.CompanyName + "</a></td>\n"
+			output += "\t\t<td><a href=\"" + stockData[k].Company.Website + "\">" + stockData[k].Company.CompanyName + "</a></td>\n"
 			output += "\t\t<td>" + strconv.FormatFloat(stockData[k].Price, 'f', 2, 64) + "</td>\n"
 			if stockData[k].Quote.Change < 0 {
 				output += "\t\t<td><span style=\"color: red;\">" + strconv.FormatFloat(stockData[k].Quote.Change, 'f', 2, 64) + "</span></td>\n"
