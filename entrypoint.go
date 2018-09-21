@@ -6,6 +6,16 @@
 	Global variables are also defined here as a matter of convenience.
 ******************************************************************************/
 
+// getEnvString returns string from environment variable.
+//func getEnvString(v string, def string) string {
+//	r := os.Getenv(v)
+//	if r == "" {
+//		return def
+//	}
+
+//	return r
+//}
+
 package main
 
 // import external libaries
