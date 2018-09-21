@@ -335,6 +335,74 @@ func httpGet(url string, header httpHeader) ([]byte, error) {
 	return output, nil
 }
 
+func GetAuth(url string,
+	headers []struct {
+		Label string
+		Value string
+	},
+	user string,
+	pass string,
+) ([]byte, error) {
+	var (
+		err     error          // error handler
+		client  http.Client    // http client
+		req     *http.Request  // http request
+		res     *http.Response // http response
+		output  []byte         // output
+	)
+
+	if config.Level >= 75 {
+		e.Info(errors.New("http get: " + url))
+	}
+
+	// set timeouts
+	client = http.Client{
+		Timeout: config.ToHTTPCon,
+		Transport: &http.Transport{
+			Dial: (&net.Dialer{
+				Timeout: config.ToHTTPCon,
+			}).Dial,
+			TLSHandshakeTimeout: config.ToHTTPSSL,
+		},
+	}
+
+	// setup request
+	if req, err = http.NewRequest("GET", url, nil); err != nil {
+		return output, err
+	}
+
+	// setup headers
+	req.Header.Set("User-Agent", config.ProgramName+" "+config.ProgramVersion)
+	if len(headers) > 0 {
+		for _, header := range headers {
+			req.Header.Set(header.Label, header.Value)
+		}
+	}
+
+	// add credentials to request
+	if len(user) == 0 || len(pass) == 0 {
+		return output, errors.New("no credentials provided for http get with authentication")
+	}
+	req.SetBasicAuth(user, pass)
+
+	// perform the request
+	if res, err = client.Do(req); err != nil {
+		return output, err
+	}
+
+	// extract response body
+	if output, err = ioutil.ReadAll(res.Body); err != nil {
+		return output, err
+	}
+
+	// check status
+	if res.StatusCode < 200 || res.StatusCode >= 300 {
+		return output, errors.New("non-successful status code received [" + strconv.Itoa(res.StatusCode) + "]")
+	}
+
+	return output, nil
+}
+
 func sendMail(host string, to string, from string, subject string, body string) error {
 	var message string
 
