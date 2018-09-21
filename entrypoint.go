@@ -389,6 +389,9 @@ func GetAuth(url string,
 	if res, err = client.Do(req); err != nil {
 		return output, err
 	}
+	
+	// close the connection upon function closure
+	defer res.Body.Close()
 
 	// extract response body
 	if output, err = ioutil.ReadAll(res.Body); err != nil {
