@@ -25,7 +25,11 @@ func printPrices(stockData iex, text bool) string {
 	sort.Strings(keys)
 
 	if text {
-		output += "Stock report as of " + color.BlueString(time.Now().Format(timeFormat)) + "\n"
+		if m, _ := marketStatus(); m {
+			output += "            " + color.GreenString(time.Now().Format(timeFormat)) + "\n"
+		} else {
+			output += "             " + color.YellowString(time.Now().Format(timeFormat)) + "\n"
+		}
 		output += ".---------------------.------------.------------.\n"
 		output += "| Company             | Price      | Change     |\n"
 		output += "|---------------------|------------|------------|\n"
