@@ -15,7 +15,9 @@ import (
 
 func printPrices(stockData iex, text bool) string {
 	var (
-		output string
+		gtol    float32
+		gtolStr string
+		output  string
 	)
 
 	keys := make([]string, 0, len(stockData))
@@ -25,11 +27,6 @@ func printPrices(stockData iex, text bool) string {
 	sort.Strings(keys)
 
 	if text {
-		var (
-			gtol    float32
-			gtolStr string
-		)
-
 		if m, _ := marketStatus(); m {
 			output += color.GreenString(time.Now().Format(timeFormat)) + "\n"
 		} else {
@@ -68,7 +65,7 @@ func printPrices(stockData iex, text bool) string {
 			} else if stockData[k].Quote.Change > 0 {
 				chge = color.GreenString(blockedOutput(strconv.FormatFloat(stockData[k].Quote.Change, 'f', 2, 64), 10))
 			} else {
-				chge = blockedOutput(strconv.FormatFloat(stockData[k].Quote.Change, 'f', 2, 64), 10)
+				chge = blockedOutput("", 10)
 			}
 
 			if totl < 0 {
@@ -76,7 +73,7 @@ func printPrices(stockData iex, text bool) string {
 			} else if totl > 0 {
 				totlStr = color.GreenString(blockedOutput(strconv.FormatFloat(float64(totl), 'f', 2, 64), 10))
 			} else {
-				totlStr = blockedOutput(strconv.FormatFloat(float64(totl), 'f', 2, 64), 10)
+				totlStr = blockedOutput("", 10)
 			}
 
 			output += "| " + cmpy + " | " + prce + " | " + chge + " | " + totlStr + " |\n"
@@ -97,27 +94,56 @@ func printPrices(stockData iex, text bool) string {
 		output += "<table>\n"
 		output += "\t<tr>\n"
 		output += "\t\t<th style=\"text-align: left;\">Company</th>\n"
-		output += "\t\t<th style=\"text-align: left;\">Closing Price</th>\n"
+		output += "\t\t<th style=\"text-align: left;\">Price</th>\n"
 		output += "\t\t<th style=\"text-align: left;\">Change</th>\n"
+		output += "\t\t<th style=\"text-align: left;\">Investment</th>\n"
 		output += "\t</tr>\n"
 		for _, k := range keys {
-			output += "\t<tr>\n"
-			output += "\t\t<td><a href=\"" + stockData[k].Company.Website + "\">" + stockData[k].Company.CompanyName + "</a></td>\n"
-			output += "\t\t<td>" + strconv.FormatFloat(stockData[k].Price, 'f', 2, 64) + "</td>\n"
-			if stockData[k].Quote.Change < 0 {
-				output += "\t\t<td><span style=\"color: red;\">" + strconv.FormatFloat(stockData[k].Quote.Change, 'f', 2, 64) + "</span></td>\n"
-			} else if stockData[k].Quote.Change > 0 {
-				output += "\t\t<td><span style=\"color: green;\">" + strconv.FormatFloat(stockData[k].Quote.Change, 'f', 2, 64) + "</span></td>\n"
-			} else {
-				output += "\t\t<td>" + strconv.FormatFloat(stockData[k].Quote.Change, 'f', 2, 64) + "</td>\n"
+			var (
+				ival float32 // investment value
+				cval float32 // current value
+				diff float32 // difference
+				totl float32 // total difference
+			)
+
+			for _, i := range cmdLnInvestments {
+				if strings.TrimSpace(strings.ToLower(stockData[k].Company.Symbol)) == strings.TrimSpace(strings.ToLower(i.Ticker)) {
+					ival = i.Quantity * i.Price
+					cval = i.Quantity * float32(stockData[k].Price)
+					diff = cval - ival
+				}
+				totl = totl + diff
 			}
+
+			output += "\t<tr>\n"
+			output += "\t\t<td>" + stockData[k].Company.CompanyName + "</td>\n"
+			output += "\t\t<td>" + strconv.FormatFloat(stockData[k].Price, 'f', 2, 64) + "</td>\n"
+
+			gtol = gtol + totl
+			if stockData[k].Quote.Change < 0 {
+				output += "\t\t<td style=\"text-align: right; color: red;\">" + strconv.FormatFloat(stockData[k].Quote.Change, 'f', 2, 64) + "</td>\n"
+			} else if stockData[k].Quote.Change > 0 {
+				output += "\t\t<td style=\"text-align: right; color: green;\">" + strconv.FormatFloat(stockData[k].Quote.Change, 'f', 2, 64) + "</td>\n"
+			} else {
+				output += "\t\t<td></td>\n"
+			}
+
+			if totl < 0 {
+				output += "\t\t<td style=\"text-align: right; color: red;\">" + strconv.FormatFloat(float64(totl), 'f', 2, 64) + "</td>\n"
+			} else if totl > 0 {
+				output += "\t\t<td style=\"text-align: right; color: green;\">" + strconv.FormatFloat(float64(totl), 'f', 2, 64) + "</td>\n"
+			} else {
+				output += "\t\t<td></td>\n"
+			}
+
 			output += "\t</tr>\n"
 		}
-		output += "</table>"
-		output += "<br>"
-		output += "<span style=\"font-weight: bold;\">Graphs:</span><br>"
+
+		output += "</table>\n"
+		output += "<br>\n"
+		output += "<span style=\"font-weight: bold;\">Graphs:</span><br>\n"
 		for _, k := range keys {
-			output += "<img src=\"https://finviz.com/chart.ashx?t=" + stockData[k].Company.Symbol + "\"><br>"
+			output += "<img src=\"https://finviz.com/chart.ashx?t=" + stockData[k].Company.Symbol + "\"><br>\n"
 		}
 	}
 
