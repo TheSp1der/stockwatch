@@ -99,7 +99,7 @@ func init() {
 	mailFrom := flag.String("from", getEnvString("EMAIL_FROM", "StockWatch <noreply@localhost>"), "(EMAIL_FROM)\nAddress to send mail from.")
 	flag.Parse()
 
-	cmdLnStocks = *stocks
+	cmdLnStocks = strings.ToLower(*stocks)
 	cmdLnEmailAddress = *mailAddress
 	cmdLnEmailHost = *mailHost
 	cmdLnEmailPort = *mailPort
@@ -118,6 +118,13 @@ func init() {
 			if !re.Match([]byte(value)) {
 				goerror.Fatal(errors.New("stock ticker format error"))
 			}
+		}
+	}
+
+	// add stocks from investments
+	if len(cmdLnInvestments) > 0 {
+		for _, i := range cmdLnInvestments {
+			trackedTickers = append(trackedTickers, strings.ToLower(i.Ticker))
 		}
 	}
 }
