@@ -24,46 +24,15 @@ import (
 )
 
 func stockMonitor() {
+	var (
+		err       error
+		sleepTime time.Duration
+	)
+
 	for {
-
-		var (
-			err       error
-			o         int
-			c         int
-			sleepTime time.Duration
-		)
-
-		// get current new york time
-		est, _ := time.LoadLocation("America/New_York")
-		ct := time.Now().In(est)
-
-		// get open and closed times
-		switch ct.Weekday() {
-		case 1, 2, 3, 4:
-			if ct.After(time.Date(ct.Year(), ct.Month(), ct.Day(), 16, 0, 0, 0, est)) {
-				o = 1
-				c = 1
-			}
-		case 5:
-			if ct.After(time.Date(ct.Year(), ct.Month(), ct.Day(), 16, 0, 0, 0, est)) {
-				o = 3
-				c = 3
-			}
-		case 6:
-			o = 2
-			c = 2
-		default:
-			o = 1
-			o = 1
-		}
-		open := time.Date(ct.Year(), ct.Month(), ct.Day()+o, 9, 30, 0, 0, est)
-		close := time.Date(ct.Year(), ct.Month(), ct.Day()+c, 16, 0, 0, 0, est)
-
-		if ct.After(open) && ct.Before(close) {
+		if o, sleepTime := marketStatus(); o {
 			sleepTime = time.Duration(time.Second * 5)
 		} else {
-			sleepTime = open.Sub(ct)
-
 			var stockData iex
 			if stockData, err = getPrices(); err != nil {
 				goerror.Warning(err)
@@ -80,6 +49,44 @@ func stockMonitor() {
 		stockCurrent()
 		time.Sleep(sleepTime)
 	}
+}
+
+func marketStatus() (bool, time.Duration) {
+	var (
+		o int
+		c int
+	)
+
+	// get current new york time
+	est, _ := time.LoadLocation("America/New_York")
+	ct := time.Now().In(est)
+
+	// get open and closed times
+	switch ct.Weekday() {
+	case 1, 2, 3, 4:
+		if ct.After(time.Date(ct.Year(), ct.Month(), ct.Day(), 16, 0, 0, 0, est)) {
+			o = 1
+			c = 1
+		}
+	case 5:
+		if ct.After(time.Date(ct.Year(), ct.Month(), ct.Day(), 16, 0, 0, 0, est)) {
+			o = 3
+			c = 3
+		}
+	case 6:
+		o = 2
+		c = 2
+	default:
+		o = 1
+		o = 1
+	}
+	open := time.Date(ct.Year(), ct.Month(), ct.Day()+o, 9, 30, 0, 0, est)
+	close := time.Date(ct.Year(), ct.Month(), ct.Day()+c, 16, 0, 0, 0, est)
+
+	if ct.After(open) && ct.Before(close) {
+		return true, 0
+	}
+	return false, open.Sub(ct)
 }
 
 func stockCurrent() {
