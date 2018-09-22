@@ -141,6 +141,13 @@ func printPrices(stockData iex, text bool) string {
 
 		output += "</table>\n"
 		output += "<br>\n"
+
+		if gtol < 0 {
+			output += "<span style=\"font-weight: bold;\">Overall Performance: <span style=\"color: red;\">" + strconv.FormatFloat(float64(gtol), 'f', 2, 64) + "</span></span>\n"
+		} else if gtol > 0 {
+			output += "<span style=\"font-weight: bold;\">Overall Performance: <span style=\"color: green;\">" + strconv.FormatFloat(float64(gtol), 'f', 2, 64) + "</span></span>\n"
+		}
+		output += "<br>\n"
 		output += "<span style=\"font-weight: bold;\">Graphs:</span><br>\n"
 		for _, k := range keys {
 			output += "<img src=\"https://finviz.com/chart.ashx?t=" + stockData[k].Company.Symbol + "\"><br>\n"
