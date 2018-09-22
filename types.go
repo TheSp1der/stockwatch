@@ -5,6 +5,13 @@ type httpHeader []struct {
 	Value string
 }
 
+type Investments []Investment
+type Investment struct {
+	Ticker   string
+	Quantity float32
+	Price    float32
+}
+
 type iex map[string]iexData
 
 type iexData struct {

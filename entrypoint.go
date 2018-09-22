@@ -6,27 +6,14 @@
 	Global variables are also defined here as a matter of convenience.
 ******************************************************************************/
 
-// getEnvString returns string from environment variable.
-//func getEnvString(v string, def string) string {
-//	r := os.Getenv(v)
-//	if r == "" {
-//		return def
-//	}
-
-//	return r
-//}
-
 package main
 
 // import external libaries
 import (
 	"bytes"
 	"errors"
-	"flag"
 	"fmt"
 	"net"
-	"os"
-	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -41,81 +28,6 @@ import (
 	"github.com/TheSp1der/goerror"
 	"github.com/fatih/color"
 )
-
-// global variables
-var (
-	cmdLnStocks       string
-	cmdLnEmailAddress string
-	cmdLnEmailHost    string
-	cmdLnEmailPort    int
-	cmdLnEmailFrom    string
-
-	trackedTickers []string
-
-	timeFormat = "2006-01-02 15:04:05"
-)
-
-// init
-// ----
-// process initialization
-//
-// input:
-//
-// return:
-func init() {
-	var (
-		err     error
-		tickers string
-	)
-
-	// read command line options
-	flag.StringVar(&cmdLnStocks, "ticker", "", "Comma seperated list of stocks to report (TICKER)")
-	flag.StringVar(&cmdLnEmailAddress, "email", "", "To address or EOD message (EMAIL_ADDR)")
-	flag.StringVar(&cmdLnEmailHost, "host", "localhost", "E-Mail server hostname (EMAIL_HOST)")
-	flag.IntVar(&cmdLnEmailPort, "port", 25, "E-Mail server port (EMAIL_PORT)")
-	flag.StringVar(&cmdLnEmailFrom, "from", "StockWatch <noreply@localhost>", "Address to send mail from (EMAIL_FROM)")
-	flag.Parse()
-
-	// read options from environment variables
-	if cmdLnStocks == "" && len(os.Getenv("TICKER")) > 0 {
-		tickers = strings.ToLower(os.Getenv("TICKER"))
-	}
-	if cmdLnEmailAddress == "" && len(os.Getenv("EMAIL_ADDR")) > 0 {
-		cmdLnEmailAddress = os.Getenv("EMAIL_ADDR")
-	}
-	if cmdLnEmailHost == "" && len(os.Getenv("EMAIL_HOST")) > 0 {
-		cmdLnEmailHost = os.Getenv("EMAIL_HOST")
-	}
-	if cmdLnEmailPort == 25 && len(os.Getenv("EMAIL_PORT")) > 0 {
-		if cmdLnEmailPort, err = strconv.Atoi(os.Getenv("EMAIL_PORT")); err != nil {
-			goerror.Fatal(errors.New("EMAIL_PORT must be numeric."))
-		}
-	}
-	if cmdLnEmailFrom == "StockWatch <noreply@localhost>" && len(os.Getenv("EMAIL_FROM")) > 0 {
-		cmdLnEmailFrom = os.Getenv("EMAIL_FROM")
-	}
-
-	// get tickers from command line (this overrides environment variables)
-	if len(cmdLnStocks) > 0 {
-		tickers = strings.ToLower(cmdLnStocks)
-	}
-
-	// convert input to struct
-	re := regexp.MustCompile(`(\s+)?,(\s+)?`)
-	trackedTickers = re.Split(tickers, -1)
-
-	// verify stocks were provided
-	if len(trackedTickers) == 1 && trackedTickers[0] == "" {
-		goerror.Fatal(errors.New("no Stocks defined"))
-	} else {
-		re = regexp.MustCompile(`^[a-z0-9]+$`)
-		for _, value := range trackedTickers {
-			if !re.Match([]byte(value)) {
-				goerror.Fatal(errors.New("stock ticker format error"))
-			}
-		}
-	}
-}
 
 // main
 // ----
@@ -203,11 +115,13 @@ func stockCurrent() {
 
 	fmt.Println(printPrices(stockData, true))
 
-	var shares float64 = 865
-	investment := (shares * 44.51)
-	value := (shares * stockData["BP"].Price)
-
-	fmt.Println("\n" + strconv.FormatFloat(value-investment, 'f', 2, 64))
+	if len(cmdLnInvestments) > 0 {
+		for _, i := range cmdLnInvestments {
+			fmt.Println(i.Ticker)
+			fmt.Println(i.Quantity)
+			fmt.Println(i.Price)
+		}
+	}
 }
 
 func printPrices(stockData iex, text bool) string {
@@ -299,80 +213,23 @@ func getPrices() (iex, error) {
 	return stockData, nil
 }
 
-func httpGet(url string, header httpHeader) ([]byte, error) {
+func httpGet(url string, headers httpHeader) ([]byte, error) {
 	var (
-		err    error
-		client http.Client
-		req    *http.Request
-		resp   *http.Response
-		output []byte
+		err    error          // error handler
+		client http.Client    // http client
+		req    *http.Request  // http request
+		res    *http.Response // http response
+		output []byte         // output
 	)
 
 	// set timeouts
 	client = http.Client{
-		Timeout: time.Duration(2 * time.Second),
+		Timeout: time.Duration(time.Second * 2),
 		Transport: &http.Transport{
 			Dial: (&net.Dialer{
-				Timeout: time.Duration(2 * time.Second),
+				Timeout: time.Duration(time.Second * 2),
 			}).Dial,
-			TLSHandshakeTimeout: time.Duration(2 * time.Second),
-		},
-	}
-
-	// set up request
-	if req, err = http.NewRequest("GET", url, nil); err != nil {
-		return []byte(""), err
-	}
-
-	// set headers
-	if len(header) > 0 {
-		for _, h := range header {
-			req.Header.Set(h.Name, h.Value)
-		}
-	}
-
-	// perform the request
-	if resp, err = client.Do(req); err != nil {
-		return []byte(""), err
-	}
-
-	// convert the response to byte
-	output, err = ioutil.ReadAll(resp.Body)
-
-	// close the connection
-	defer resp.Body.Close()
-
-	return output, nil
-}
-
-func GetAuth(url string,
-	headers []struct {
-		Label string
-		Value string
-	},
-	user string,
-	pass string,
-) ([]byte, error) {
-	var (
-		err     error          // error handler
-		client  http.Client    // http client
-		req     *http.Request  // http request
-		res     *http.Response // http response
-		output  []byte         // output
-	)
-
-	if config.Level >= 75 {
-		e.Info(errors.New("http get: " + url))
-	}
-
-	// set timeouts
-	client = http.Client{
-		Timeout: config.ToHTTPCon,
-		Transport: &http.Transport{
-			Dial: (&net.Dialer{
-				Timeout: config.ToHTTPCon,
-			}).Dial,
-			TLSHandshakeTimeout: config.ToHTTPSSL,
+			TLSHandshakeTimeout: time.Duration(time.Second * 2),
 		},
 	}
 
@@ -382,24 +239,17 @@ func GetAuth(url string,
 	}
 
 	// setup headers
-	req.Header.Set("User-Agent", config.ProgramName+" "+config.ProgramVersion)
 	if len(headers) > 0 {
 		for _, header := range headers {
-			req.Header.Set(header.Label, header.Value)
+			req.Header.Set(header.Name, header.Value)
 		}
 	}
-
-	// add credentials to request
-	if len(user) == 0 || len(pass) == 0 {
-		return output, errors.New("no credentials provided for http get with authentication")
-	}
-	req.SetBasicAuth(user, pass)
 
 	// perform the request
 	if res, err = client.Do(req); err != nil {
 		return output, err
 	}
-	
+
 	// close the connection upon function closure
 	defer res.Body.Close()
 
