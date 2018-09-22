@@ -17,8 +17,6 @@ import (
 	"github.com/TheSp1der/goerror"
 )
 
-
-
 // global variables
 var (
 	cmdLnStocks       string
@@ -42,13 +40,22 @@ func getEnvString(env string, def string) string {
 	return val
 }
 
-// getEnvPort returns int from environment variable
+// getEnvInt returns int from environment variable
 func getEnvInt(env string, def int) int {
-	val, _ := strconv.Atoi(os.Getenv(env))
-	if len(strconv.Itoa(val)) == 0 {
+	var (
+		err error
+		val = os.Getenv(env)
+		ret int
+	)
+	if len(val) == 0 {
 		return def
 	}
-	return val
+
+	if ret, err = strconv.Atoi(val); err != nil {
+		goerror.Fatal(errors.New(env + " environment variable is not numeric"))
+	}
+
+	return ret
 }
 
 // String format flag value
