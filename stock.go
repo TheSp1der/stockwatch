@@ -30,10 +30,12 @@ func stockMonitor() {
 	)
 
 	for {
-		if o, sleepTime := marketStatus(); o {
+		if o, s := marketStatus(); o {
 			sleepTime = time.Duration(time.Second * 5)
 		} else {
 			var stockData iex
+			sleepTime = s
+
 			if stockData, err = getPrices(); err != nil {
 				goerror.Warning(err)
 			}
