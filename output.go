@@ -7,6 +7,7 @@ package main
 import (
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/fatih/color"
@@ -25,16 +26,24 @@ func printPrices(stockData iex, text bool) string {
 
 	if text {
 		output += "Stock report as of " + color.BlueString(time.Now().Format(timeFormat)) + "\n"
-		output += "Company" + "\t\t" + "Current Price" + "\t" + "Change" + "\n"
+		output += ".---------------------.------------.------------.\n"
+		output += "| Company             | Price      | Change     |\n"
+		output += "|---------------------|------------|------------|\n"
 		for _, k := range keys {
+			c := blockedOutput(stockData[k].Company.CompanyName, 19)
+			p := blockedOutput(strconv.FormatFloat(stockData[k].Price, 'f', 2, 64), 10)
+			var ch string
+
 			if stockData[k].Quote.Change < 0 {
-				output += stockData[k].Company.Symbol + "\t\t" + strconv.FormatFloat(stockData[k].Price, 'f', 2, 64) + "\t\t" + color.RedString(strconv.FormatFloat(stockData[k].Quote.Change, 'f', 2, 64)) + "\t\t" + stockData[k].Company.CompanyName + "\n"
+				ch = color.RedString(blockedOutput(strconv.FormatFloat(stockData[k].Quote.Change, 'f', 2, 64), 10))
 			} else if stockData[k].Quote.Change > 0 {
-				output += stockData[k].Company.Symbol + "\t\t" + strconv.FormatFloat(stockData[k].Price, 'f', 2, 64) + "\t\t" + color.GreenString(strconv.FormatFloat(stockData[k].Quote.Change, 'f', 2, 64)) + "\t\t" + stockData[k].Company.CompanyName + "\n"
+				ch = color.GreenString(blockedOutput(strconv.FormatFloat(stockData[k].Quote.Change, 'f', 2, 64), 10))
 			} else {
-				output += stockData[k].Company.Symbol + "\t\t" + strconv.FormatFloat(stockData[k].Price, 'f', 2, 64) + "\t\t\t\t" + stockData[k].Company.CompanyName + "\n"
+				ch = blockedOutput(strconv.FormatFloat(stockData[k].Quote.Change, 'f', 2, 64), 10)
 			}
+			output += "| " + c + " | " + p + " | " + ch + " |\n"
 		}
+		output += "`---------------------'------------'------------'\n"
 	} else {
 		output += "<span style=\"font-weight: bold;\">Stock report as of " + time.Now().Format(timeFormat) + "</span><br>\n"
 		output += "<table>\n"
@@ -65,4 +74,16 @@ func printPrices(stockData iex, text bool) string {
 	}
 
 	return output
+}
+
+func blockedOutput(input string, width int) string {
+	r := []rune(input)
+
+	if len(r) > width {
+		return string(r[0:width])
+	} else if len(r) < width {
+		s := width - len(r)
+		return string(r) + strings.Repeat(" ", s)
+	}
+	return input
 }
