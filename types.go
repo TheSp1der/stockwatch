@@ -1,3 +1,7 @@
+/******************************************************************************
+	types.go
+	provides structs and maps for all associated functions
+******************************************************************************/
 package main
 
 type httpHeader []struct {

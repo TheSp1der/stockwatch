@@ -1,3 +1,8 @@
+/******************************************************************************
+	init.go
+	process initialization functions for preparing global variables and
+	retrieving options from the command line and/or environment
+******************************************************************************/
 package main
 
 import (
