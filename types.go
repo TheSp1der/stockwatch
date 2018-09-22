@@ -9,8 +9,8 @@ type httpHeader []struct {
 	Value string
 }
 
-type Investments []Investment
-type Investment struct {
+type investments []investment
+type investment struct {
 	Ticker   string
 	Quantity float32
 	Price    float32

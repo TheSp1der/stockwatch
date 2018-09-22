@@ -22,7 +22,7 @@ import (
 // global variables
 var (
 	cmdLnStocks       string
-	cmdLnInvestments  Investments
+	cmdLnInvestments  investments
 	cmdLnEmailAddress string
 	cmdLnEmailHost    string
 	cmdLnEmailPort    int
@@ -52,12 +52,12 @@ func getEnvInt(env string, def int) int {
 }
 
 // String format flag value
-func (i *Investments) String() string {
+func (i *investments) String() string {
 	return fmt.Sprint(*i)
 }
 
 // Set set flag value
-func (i *Investments) Set(value string) error {
+func (i *investments) Set(value string) error {
 	if len(strings.Split(value, ",")) == 3 {
 		var (
 			err      error
@@ -72,7 +72,7 @@ func (i *Investments) Set(value string) error {
 		if price, err = strconv.ParseFloat(inv[2], 32); err != nil {
 			return err
 		}
-		cmdLnInvestments = append(cmdLnInvestments, Investment{
+		cmdLnInvestments = append(cmdLnInvestments, investment{
 			Ticker:   inv[0],
 			Quantity: float32(quantity),
 			Price:    float32(price),
