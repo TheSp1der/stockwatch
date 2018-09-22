@@ -102,14 +102,6 @@ func stockCurrent() {
 	}
 
 	fmt.Println(printPrices(stockData, true))
-
-	if len(cmdLnInvestments) > 0 {
-		for _, i := range cmdLnInvestments {
-			fmt.Println(i.Ticker)
-			fmt.Println(i.Quantity)
-			fmt.Println(i.Price)
-		}
-	}
 }
 
 func getPrices() (iex, error) {
