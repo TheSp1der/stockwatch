@@ -10,9 +10,12 @@ import (
 	"net/smtp"
 )
 
-func sendMail(host string, to string, from string, subject string, body string) error {
-	var message string
-
+// basicMailSend will connect to a remote mail server without authentication and send a message
+func basicMailSend(host string, to string, from string, subject string, body string) error {
+	var (
+		message string
+		buf *bytes.Buffer
+	)
 	// connect to the remote server
 	client, err := smtp.Dial(host)
 	if err != nil {
@@ -29,6 +32,8 @@ func sendMail(host string, to string, from string, subject string, body string) 
 	if err != nil {
 		return err
 	}
+
+	// close connection once function is complete
 	defer mailContent.Close()
 
 	message = "From: " + from + "\n"
@@ -43,7 +48,10 @@ func sendMail(host string, to string, from string, subject string, body string) 
 	message += "</html>\n"
 	message += "\n"
 
-	buf := bytes.NewBufferString(message)
+	// set up connection
+	buf = bytes.NewBufferString(message)
+
+	// send message
 	if _, err = buf.WriteTo(mailContent); err != nil {
 		return err
 	}
