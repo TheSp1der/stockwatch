@@ -121,6 +121,7 @@ func init() {
 	verbose := flag.Bool("verbose", getEnvBool("VERBOSE", false), "(VERBOSE)\nWhen run in mail mode display prices when market is open.")
 	flag.Parse()
 
+	// set global variables
 	cmdLnStocks = strings.ToLower(*stocks)
 	cmdLnEmailAddress = *mailAddress
 	cmdLnEmailHost = *mailHost

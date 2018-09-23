@@ -5,7 +5,7 @@
 ******************************************************************************/
 package main
 
-// main - process start
+// main - main process starting point
 func main() {
 	if cmdLnEmailAddress != "" && cmdLnEmailFrom != "" && cmdLnEmailHost != "" {
 		stockMonitor()

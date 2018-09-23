@@ -4,11 +4,15 @@
 ******************************************************************************/
 package main
 
+// httpHeader is a struct for http connections to submit multiple
+// headers with requests/gets/posts/etc
 type httpHeader []struct {
 	Name  string
 	Value string
 }
 
+// investments is a struct for tracking investment positions for
+// calculations of gains/losses
 type investments []investment
 type investment struct {
 	Ticker   string
@@ -16,8 +20,8 @@ type investment struct {
 	Price    float32
 }
 
+// iex is a struct for the data returned by the iex api
 type iex map[string]iexData
-
 type iexData struct {
 	Quote   iexQuote   `json:"quote"`
 	Price   float64    `json:"price"`
@@ -25,7 +29,6 @@ type iexData struct {
 	Stats   iexStats   `json:"stats"`
 	Ohlc    iexOhlc    `json:"ohlc"`
 }
-
 type iexQuote struct {
 	AvgTotalVolume        int64   `json:"avgTotalVolume"`
 	CalculationPrice      string  `json:"calculationPrice"`
@@ -68,7 +71,6 @@ type iexQuote struct {
 	Week52Low             float64 `json:"week52Low"`
 	YtdChange             float64 `json:"ytdChange"`
 }
-
 type iexCompany struct {
 	Ceo         string   `json:"CEO"`
 	CompanyName string   `json:"companyName"`
