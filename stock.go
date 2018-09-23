@@ -40,7 +40,7 @@ func stockMonitor() {
 				goerror.Warning(err)
 			}
 
-			if err = sendMail(cmdLnEmailHost+":"+strconv.Itoa(cmdLnEmailPort), cmdLnEmailAddress, cmdLnEmailFrom, "Stock Alert", printPrices(stockData, false)); err != nil {
+			if err = sendMail(cmdLnEmailHost+":"+strconv.Itoa(cmdLnEmailPort), cmdLnEmailAddress, cmdLnEmailFrom, "Stock Alert", displayHTML(stockData)); err != nil {
 				goerror.Warning(err)
 			}
 
@@ -48,7 +48,9 @@ func stockMonitor() {
 			fmt.Println("Script will resume at " + time.Now().Add(time.Duration(sleepTime)).Format(timeFormat) + " which is in " + strconv.FormatFloat(sleepTime.Seconds(), 'f', 0, 64) + " seconds.")
 		}
 
-		stockCurrent()
+		if cmdLnVerbose {
+			stockCurrent()
+		}
 		time.Sleep(sleepTime)
 	}
 }
@@ -101,7 +103,7 @@ func stockCurrent() {
 		goerror.Warning(err)
 	}
 
-	fmt.Println(printPrices(stockData, true))
+	fmt.Println(displayTerminal(stockData))
 }
 
 func getPrices() (iex, error) {
