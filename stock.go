@@ -23,15 +23,35 @@ import (
 	"github.com/TheSp1der/goerror"
 )
 
+// stockCurrent will retrieve the market values and write the
+// results to the terminal
+func stockCurrent() {
+	var (
+		err       error
+		stockData iex
+	)
+
+	if stockData, err = getPrices(); err != nil {
+		goerror.Warning(err)
+	}
+
+	fmt.Println(displayTerminal(stockData))
+}
+
+// stockMonitor is the entrypoint for monitoring the market in an
+// infinite method, must have e-mail configured for EOD messages
 func stockMonitor() {
 	var (
 		err       error
 		sleepTime time.Duration
 	)
 
+	// begin loop
 	for {
+		// if market is open, sleep for 5 seconds
 		if o, s := marketStatus(); o {
 			sleepTime = time.Duration(time.Second * 5)
+		// if market is closed send EOD message and sleep until it opens
 		} else {
 			var stockData iex
 			sleepTime = s
@@ -40,7 +60,7 @@ func stockMonitor() {
 				goerror.Warning(err)
 			}
 
-			if err = sendMail(cmdLnEmailHost+":"+strconv.Itoa(cmdLnEmailPort), cmdLnEmailAddress, cmdLnEmailFrom, "Stock Alert", displayHTML(stockData)); err != nil {
+			if err = basicMailSend(cmdLnEmailHost+":"+strconv.Itoa(cmdLnEmailPort), cmdLnEmailAddress, cmdLnEmailFrom, "Stock Alert", displayHTML(stockData)); err != nil {
 				goerror.Warning(err)
 			}
 
@@ -48,13 +68,18 @@ func stockMonitor() {
 			fmt.Println("Script will resume at " + time.Now().Add(time.Duration(sleepTime)).Format(timeFormat) + " which is in " + strconv.FormatFloat(sleepTime.Seconds(), 'f', 0, 64) + " seconds.")
 		}
 
+		// if verbose update terminal
 		if cmdLnVerbose {
 			stockCurrent()
 		}
+
+		// sleep
 		time.Sleep(sleepTime)
 	}
 }
 
+// marketStatus will determine if the market is open, if it is closed
+// it will return the time until it is open again
 func marketStatus() (bool, time.Duration) {
 	var (
 		o int
@@ -87,25 +112,16 @@ func marketStatus() (bool, time.Duration) {
 	open := time.Date(ct.Year(), ct.Month(), ct.Day()+o, 9, 30, 0, 0, est)
 	close := time.Date(ct.Year(), ct.Month(), ct.Day()+c, 16, 0, 0, 0, est)
 
+	// if the market is open return true
 	if ct.After(open) && ct.Before(close) {
 		return true, 0
 	}
+	
+	// otherwise return false with time until it is open
 	return false, open.Sub(ct)
 }
 
-func stockCurrent() {
-	var (
-		err       error
-		stockData iex
-	)
-
-	if stockData, err = getPrices(); err != nil {
-		goerror.Warning(err)
-	}
-
-	fmt.Println(displayTerminal(stockData))
-}
-
+// getPrices will get the current stock data
 func getPrices() (iex, error) {
 	var (
 		err       error
