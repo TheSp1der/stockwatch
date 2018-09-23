@@ -63,8 +63,8 @@ func displayTerminal(stockData iex) string {
 				ival = i.Quantity * i.Price
 				cval = i.Quantity * float32(stockData[k].Price)
 				diff = cval - ival
+				totl = totl + diff
 			}
-			totl = totl + diff
 		}
 
 		// update the grand total loss/gain
@@ -151,8 +151,8 @@ func displayHTML(stockData iex) string {
 				ival = i.Quantity * i.Price
 				cval = i.Quantity * float32(stockData[k].Price)
 				diff = cval - ival
+				totl = totl + diff
 			}
-			totl = totl + diff
 		}
 		
 		// update the grand total loss/gain
