@@ -25,6 +25,7 @@ var (
 	cmdLnEmailHost    string
 	cmdLnEmailPort    int
 	cmdLnEmailFrom    string
+	cmdLnVerbose      bool
 
 	trackedTickers []string
 
@@ -40,6 +41,25 @@ func getEnvString(env string, def string) string {
 	return val
 }
 
+// getEnvBool returns boolean from environment variable
+func getEnvBool(env string, def bool) bool {
+	var (
+		err error
+		val = os.Getenv(env)
+		ret bool
+	)
+
+	if len(val) == 0 {
+		return def
+	}
+
+	if ret, err = strconv.ParseBool(val); err != nil {
+		goerror.Fatal(errors.New(val + " environment variable is not boolean"))
+	}
+
+	return ret
+}
+
 // getEnvInt returns int from environment variable
 func getEnvInt(env string, def int) int {
 	var (
@@ -47,6 +67,7 @@ func getEnvInt(env string, def int) int {
 		val = os.Getenv(env)
 		ret int
 	)
+
 	if len(val) == 0 {
 		return def
 	}
@@ -97,6 +118,7 @@ func init() {
 	mailHost := flag.String("host", getEnvString("EMAIL_HOST", ""), "(EMAIL_HOST)\nE-Mail server hostname.")
 	mailPort := flag.Int("port", getEnvInt("EMAIL_PORT", 25), "(EMAIL_PORT)\nE-Mail server port.")
 	mailFrom := flag.String("from", getEnvString("EMAIL_FROM", "StockWatch <noreply@localhost>"), "(EMAIL_FROM)\nAddress to send mail from.")
+	verbose := flag.Bool("verbose", getEnvBool("VERBOSE", false), "(VERBOSE)\nWhen run in mail mode display prices when market is open.")
 	flag.Parse()
 
 	cmdLnStocks = strings.ToLower(*stocks)
@@ -104,6 +126,7 @@ func init() {
 	cmdLnEmailHost = *mailHost
 	cmdLnEmailPort = *mailPort
 	cmdLnEmailFrom = *mailFrom
+	cmdLnVerbose = *verbose
 
 	// convert input to struct
 	re := regexp.MustCompile(`(\s+)?,(\s+)?`)
