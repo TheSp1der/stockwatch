@@ -41,8 +41,8 @@ configured stock information and promptly terminates.
 ### Monitor Mode
 
 When stockwatch is run by providing a to e-mail address, from e-mail address, and
-mail server it run in a monitor mode. This mode will determine the open/closed time
-for the NYSE and e-mail you at the close of every business day with the closing
+mail server it will run in a monitor mode. This mode will determine the open/closed
+time for the NYSE and e-mail you at the close of every business day with the closing
 prices.
 
 ## Command Line Options
