@@ -54,7 +54,7 @@ prices.
 | -host               | EMAIL_HOST           | null              | E-Mail server host.
 | -invest             |                      | null              | Used for tracking current investments. Please see [invest](#invest-option) below. |
 | -port               | EMAIL_PORT           | 25                | E-Mail server port. |
-| -ticker             | TICKERS              | null              | Comma seperated list of stocks to report. |
+| -ticker             | TICKERS              | null              | Comma separated list of stocks to report. |
 | -verbose            | VERBOSE              | false             | Display current stock values every 5 seconds when run in monitor mode. |
 
 ### Invest Option
@@ -67,7 +67,7 @@ amd at $30.12, and 12 shares of googl (Alphabet Inc.) for $584.67.
 and display your overall gain/loss based on the most recent price.
 
 To call stockwatch with that data you supply the -invest option with the ticker,
-the quatnity, and the purchased price in that order, seperated by a comma. Like
+the quantity, and the purchased price in that order, separated by a comma. Like
 so:
 
 ```bash
