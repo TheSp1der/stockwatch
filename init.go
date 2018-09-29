@@ -114,10 +114,10 @@ func init() {
 	// read command line options
 	flag.Var(&cmdLnInvestments, "invest", "Formatted investment in the form of \"Ticker,Quantity,Price\".")
 	stocks := flag.String("ticker", getEnvString("TICKERS", ""), "(TICKERS)\nComma seperated list of stocks to report.")
-	mailAddress := flag.String("email", getEnvString("EMAIL_ADDR", ""), "(EMAIL_ADDR)\nE-mail address that will receive the end of day summary.")
-	mailHost := flag.String("host", getEnvString("EMAIL_HOST", ""), "(EMAIL_HOST)\nE-Mail server hostname.")
+	mailAddress := flag.String("email", getEnvString("EMAIL_ADDR", ""), "(EMAIL_ADDR)\nDestination e-mail address that will receive the end of day summary.")
+	mailHost := flag.String("host", getEnvString("EMAIL_HOST", ""), "(EMAIL_HOST)\nE-Mail server host.")
 	mailPort := flag.Int("port", getEnvInt("EMAIL_PORT", 25), "(EMAIL_PORT)\nE-Mail server port.")
-	mailFrom := flag.String("from", getEnvString("EMAIL_FROM", "StockWatch <noreply@localhost>"), "(EMAIL_FROM)\nAddress to send mail from.")
+	mailFrom := flag.String("from", getEnvString("EMAIL_FROM", "noreply@localhost"), "(EMAIL_FROM)\nAddress the message will be sent from.")
 	verbose := flag.Bool("verbose", getEnvBool("VERBOSE", false), "(VERBOSE)\nWhen run in mail mode display prices when market is open.")
 	flag.Parse()
 
