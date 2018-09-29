@@ -13,7 +13,7 @@
 [stockwatch](//github.com/TheSp1der/stockwatch) is a console stock informational
 system written in go.
 
-![stockwatch example #1](https://github.com/TheSp1der/stockwatch/blob/master/readme-images/console-1.png?raw=true)
+![stockwatch example #1](https://raw.github.com/TheSp1der/stockwatch/master/readme-images/console-1.png)
 
 [stockwatch](//github.com/TheSp1der/stockwatch) uses free data provided by
 [IEX](//iextrading.com/developer/) to obtain market data. Please read and agree
@@ -75,7 +75,7 @@ stockwatch -ticker amd,googl -invest amd,30,28.44 -invest amd,10,30.12 -invest g
 ```
 
 The output would look like this:
-![stockwatch example #2](https://github.com/TheSp1der/stockwatch/blob/master/readme-images/console-2.png?raw=true)
+![stockwatch example #2](https://raw.github.com/TheSp1der/stockwatch/master/readme-images/console-2.png)
 
 ## License
 
