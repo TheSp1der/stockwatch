@@ -13,13 +13,16 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
-	"net/url"
+	"os"
 	"strconv"
 	"strings"
 	"time"
 
+	"encoding/json"
+	"net/url"
+
+	"golang.org/x/crypto/ssh/terminal"
 	"github.com/TheSp1der/goerror"
 )
 
@@ -35,6 +38,7 @@ func stockCurrent() {
 		goerror.Warning(err)
 	}
 
+	// output the formatted stock information
 	fmt.Println(displayTerminal(stockData))
 }
 
@@ -51,7 +55,7 @@ func stockMonitor() {
 		// if market is open, sleep for 5 seconds
 		if o, s := marketStatus(); o {
 			sleepTime = time.Duration(time.Second * 5)
-		// if market is closed send EOD message and sleep until it opens
+			// if market is closed send EOD message and sleep until it opens
 		} else {
 			var stockData iex
 			sleepTime = s
@@ -70,6 +74,14 @@ func stockMonitor() {
 
 		// if verbose update terminal
 		if cmdLnVerbose {
+
+			// check to see if we are running in a terminal
+			if terminal.IsTerminal(int(os.Stdout.Fd())) {
+				// reset the location of the cursor
+				fmt.Printf("\033[0;0H")
+			}
+
+			// print the current prices to the screen
 			stockCurrent()
 		}
 
@@ -116,7 +128,7 @@ func marketStatus() (bool, time.Duration) {
 	if ct.After(open) && ct.Before(close) {
 		return true, 0
 	}
-	
+
 	// otherwise return false with time until it is open
 	return false, open.Sub(ct)
 }
