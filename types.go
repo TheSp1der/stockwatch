@@ -28,6 +28,7 @@ type stockData struct {
 	CurrentValue string
 	Change       string
 	GL           string
+	Symbol       string
 }
 
 // iex is a struct for the data returned by the iex api.
