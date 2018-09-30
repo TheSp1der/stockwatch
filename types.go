@@ -12,8 +12,22 @@ type httpHeader []struct {
 type investments []investment
 type investment struct {
 	Ticker   string
-	Quantity float32
-	Price    float32
+	Quantity float64
+	Price    float64
+}
+
+// outputStructure is the output structure available to templates
+type outputStructure struct {
+	CurrentTime   string
+	MarketStatus  string
+	TotalGainLoss string
+	Stock         map[string]stockData
+}
+type stockData struct {
+	CompanyName  string
+	CurrentValue string
+	Change       string
+	GL           string
 }
 
 // iex is a struct for the data returned by the iex api.

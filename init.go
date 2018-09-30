@@ -97,8 +97,8 @@ func (i *investments) Set(value string) error {
 		}
 		cmdLnInvestments = append(cmdLnInvestments, investment{
 			Ticker:   inv[0],
-			Quantity: float32(quantity),
-			Price:    float32(price),
+			Quantity: quantity,
+			Price:    price,
 		})
 	}
 	return nil

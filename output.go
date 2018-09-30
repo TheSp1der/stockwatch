@@ -1,63 +1,75 @@
 package main
 
 import (
+	"bytes"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
 
+	"text/template"
+
+	"github.com/TheSp1der/goerror"
 	"github.com/fatih/color"
 )
 
 // displayTermnal returns a string for display in the terminal window of
 // calculated and tracked stocks and the overall gains/losses of provided
 // investments.
-func displayTerminal(stockData iex) string {
+func displayTerminal(stock iex) string {
 	var (
-		gtol    float32
-		gtolStr string
-		output  string
+		err            error
+		outputTemplate *template.Template
+		data           outputStructure
+		output         bytes.Buffer
+		gtol           float64
 	)
 
-	// sorting stocks for display
-	keys := make([]string, 0, len(stockData))
-	for k := range stockData {
+	// create the template
+	tplt := ".-----------------------------------------------------------------------------.\n"
+	tplt += "| Current Time: {{.CurrentTime}} Market Status: {{.MarketStatus}} |\n"
+	tplt += "|--------------------------------.--------------.----------------.------------|\n"
+	tplt += "| Company Name                   | Market Value | Today's Change | Gain/Loss  |\n"
+	tplt += "|--------------------------------|--------------|----------------|------------|\n"
+	tplt += "{{- range .Stock}}\n"
+	tplt += "| {{ .CompanyName}} | {{.CurrentValue}} | {{.Change}} | {{.GL}} |\n"
+	tplt += "{{- end }}\n"
+	tplt += "{{- if .TotalGainLoss}}\n"
+	tplt += "|--------------------------------'--------------'----------------'------------|\n"
+	tplt += "| Total Investment Value: {{.TotalGainLoss}} |\n"
+	tplt += "`-----------------------------------------------------------------------------'\n"
+	tplt += "{{- else}}\n"
+	tplt += "`--------------------------------'--------------'----------------'------------'\n"
+	tplt += "{{- end}}"
+
+	// initialize data stock map
+	data.Stock = make(map[string]stockData)
+
+	// sort stocks for display
+	keys := make([]string, 0, len(stock))
+	for k := range stock {
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
 
-	// timestamp of the current run, color is determined by the status
-	// of the market (open vs. closed)
-	if m, _ := marketStatus(); m {
-		output += color.GreenString(time.Now().Format(timeFormat)) + "\n"
-	} else {
-		output += color.YellowString(time.Now().Format(timeFormat)) + "\n"
-	}
-
-	// table header
-	output += ".--------------------------------.--------------.----------------.------------.\n"
-	output += "| Company Name                   | Market Value | Today's Change | Gain/Loss  |\n"
-	output += "|--------------------------------|--------------|----------------|------------|\n"
-
-	// individual stock lines
 	for _, k := range keys {
 		var (
-			cmpy    string  // company name
-			prce    string  // price
-			chge    string  // change
-			ival    float32 // investment value
-			cval    float32 // current value
-			diff    float32 // difference
-			totl    float32 // total difference
-			totlStr string  // total difference (string)
+			cn   string  // company name
+			cv   string  // current value
+			ch   string  // change
+			ival float64 // // investment value
+			cval float64 // current value
+			diff float64 // difference
+			totl float64 // total difference
+			t    string  // total investment (string output)
 		)
 
 		// calculate the total for the ticker in the event a stock
 		// has multiple investments
 		for _, i := range cmdLnInvestments {
-			if strings.TrimSpace(strings.ToLower(stockData[k].Company.Symbol)) == strings.TrimSpace(strings.ToLower(i.Ticker)) {
+			if strings.TrimSpace(strings.ToLower(stock[k].Company.Symbol)) == strings.TrimSpace(strings.ToLower(i.Ticker)) {
 				ival = i.Quantity * i.Price
-				cval = i.Quantity * float32(stockData[k].Price)
+				cval = i.Quantity * stock[k].Price
 				diff = cval - ival
 				totl = totl + diff
 			}
@@ -66,53 +78,59 @@ func displayTerminal(stockData iex) string {
 		// update the grand total loss/gain
 		gtol = gtol + totl
 
-		// update the variable for each displayed table data
-		cmpy = alignLeft(stockData[k].Company.CompanyName, 30)
-		prce = alignRight(strconv.FormatFloat(stockData[k].Price, 'f', 2, 64), 12)
-		if stockData[k].Quote.Change < 0 {
-			chge = color.RedString(alignRight(strconv.FormatFloat(stockData[k].Quote.Change, 'f', 2, 64), 14))
-		} else if stockData[k].Quote.Change > 0 {
-			chge = color.GreenString(alignRight(strconv.FormatFloat(stockData[k].Quote.Change, 'f', 2, 64), 14))
+		// start setting values for template data struct
+		cn = alignLeft(stock[k].Company.CompanyName, 30)
+		cv = alignRight(strconv.FormatFloat(stock[k].Price, 'f', 2, 64), 12)
+		if stock[k].Quote.Change < 0 {
+			ch = color.RedString(alignRight(strconv.FormatFloat(stock[k].Quote.Change, 'f', 2, 64), 14))
+		} else if stock[k].Quote.Change > 0 {
+			ch = color.GreenString(alignRight(strconv.FormatFloat(stock[k].Quote.Change, 'f', 2, 64), 14))
 		} else {
-			chge = alignRight("", 14)
+			ch = alignRight("", 14)
 		}
 
 		if totl < 0 {
-			totlStr = color.RedString(alignRight(strconv.FormatFloat(float64(totl), 'f', 2, 64), 10))
+			t = color.RedString(alignRight(strconv.FormatFloat(totl, 'f', 2, 64), 10))
 		} else if totl > 0 {
-			totlStr = color.GreenString(alignRight(strconv.FormatFloat(float64(totl), 'f', 2, 64), 10))
+			t = color.GreenString(alignRight(strconv.FormatFloat(totl, 'f', 2, 64), 10))
 		} else {
-			totlStr = alignRight("", 10)
+			t = alignRight("", 10)
 		}
 
-		// record that lines output
-		output += "| " + cmpy + " | " + prce + " | " + chge + " | " + totlStr + " |\n"
+		data.Stock[stock[k].Company.Symbol] = stockData{CompanyName: cn,
+			CurrentValue: cv,
+			Change:       ch,
+			GL:           t,
+		}
 	}
 
-	// update the grand total loss/gain if it has value
-	if gtol < 0 {
-		gtolStr = color.RedString(alignRight(strconv.FormatFloat(float64(gtol), 'f', 2, 64), 10))
-	} else if gtol > 0 {
-		gtolStr = color.GreenString(alignRight(strconv.FormatFloat(float64(gtol), 'f', 2, 64), 10))
-	}
-
-	// record footer (differ if grand total had value)
-	if gtol != 0 {
-		output += "|--------------------------------'--------------'----------------'------------|\n"
-		output += "| Total Investment Value:                                          " + gtolStr + " |\n"
-		output += "`-----------------------------------------------------------------------------'\n"
+	// set the date/time and market status
+	data.CurrentTime = alignLeft(time.Now().Local().Format(timeFormat), 38)
+	if m, _ := marketStatus(); m {
+		data.MarketStatus = color.GreenString(alignLeft("OPEN", 7))
 	} else {
-		output += "`--------------------------------'--------------'----------------'------------'\n"
+		data.MarketStatus = color.YellowString(alignRight("CLOSED", 7))
+	}
+	if gtol < 0 {
+		data.TotalGainLoss = color.RedString(alignRight(strconv.FormatFloat(gtol, 'f', 2, 64), 51))
+	} else if gtol > 0 {
+		data.TotalGainLoss = color.GreenString(alignRight(strconv.FormatFloat(gtol, 'f', 2, 64), 51))
 	}
 
-	return output
+	outputTemplate = template.Must(template.New("console").Parse(tplt))
+
+	if err = outputTemplate.Execute(&output, data); err != nil {
+		goerror.Fatal(err)
+	}
+
+	return output.String()
 }
 
 // displayHTML returns a string for e-mail messages of calculated and
 // tracked stocks and the overall gains/losses of provided investments.
 func displayHTML(stockData iex) string {
 	var (
-		gtol   float32
+		gtol   float64
 		output string
 	)
 
@@ -134,10 +152,10 @@ func displayHTML(stockData iex) string {
 	output += "\t</tr>\n"
 	for _, k := range keys {
 		var (
-			ival float32 // investment value
-			cval float32 // current value
-			diff float32 // difference
-			totl float32 // total difference
+			ival float64 // investment value
+			cval float64 // current value
+			diff float64 // difference
+			totl float64 // total difference
 		)
 
 		// calculate the total for the ticker in the event a stock
@@ -145,12 +163,12 @@ func displayHTML(stockData iex) string {
 		for _, i := range cmdLnInvestments {
 			if strings.TrimSpace(strings.ToLower(stockData[k].Company.Symbol)) == strings.TrimSpace(strings.ToLower(i.Ticker)) {
 				ival = i.Quantity * i.Price
-				cval = i.Quantity * float32(stockData[k].Price)
+				cval = i.Quantity * stockData[k].Price
 				diff = cval - ival
 				totl = totl + diff
 			}
 		}
-		
+
 		// update the grand total loss/gain
 		gtol = gtol + totl
 
@@ -158,7 +176,6 @@ func displayHTML(stockData iex) string {
 		output += "\t<tr>\n"
 		output += "\t\t<td>" + stockData[k].Company.CompanyName + "</td>\n"
 		output += "\t\t<td style=\"text-align: right;\">" + strconv.FormatFloat(stockData[k].Price, 'f', 2, 64) + "</td>\n"
-
 
 		if stockData[k].Quote.Change < 0 {
 			output += "\t\t<td style=\"text-align: right; color: red;\">" + strconv.FormatFloat(stockData[k].Quote.Change, 'f', 2, 64) + "</td>\n"
@@ -169,9 +186,9 @@ func displayHTML(stockData iex) string {
 		}
 
 		if totl < 0 {
-			output += "\t\t<td style=\"text-align: right; color: red;\">" + strconv.FormatFloat(float64(totl), 'f', 2, 64) + "</td>\n"
+			output += "\t\t<td style=\"text-align: right; color: red;\">" + strconv.FormatFloat(totl, 'f', 2, 64) + "</td>\n"
 		} else if totl > 0 {
-			output += "\t\t<td style=\"text-align: right; color: green;\">" + strconv.FormatFloat(float64(totl), 'f', 2, 64) + "</td>\n"
+			output += "\t\t<td style=\"text-align: right; color: green;\">" + strconv.FormatFloat(totl, 'f', 2, 64) + "</td>\n"
 		} else {
 			output += "\t\t<td></td>\n"
 		}
@@ -184,9 +201,9 @@ func displayHTML(stockData iex) string {
 
 	// record the grand total loss/gain if it has value
 	if gtol < 0 {
-		output += "<span style=\"font-weight: bold;\">Overall Performance: <span style=\"color: red;\">" + strconv.FormatFloat(float64(gtol), 'f', 2, 64) + "</span></span>\n"
+		output += "<span style=\"font-weight: bold;\">Overall Performance: <span style=\"color: red;\">" + strconv.FormatFloat(gtol, 'f', 2, 64) + "</span></span>\n"
 	} else if gtol > 0 {
-		output += "<span style=\"font-weight: bold;\">Overall Performance: <span style=\"color: green;\">" + strconv.FormatFloat(float64(gtol), 'f', 2, 64) + "</span></span>\n"
+		output += "<span style=\"font-weight: bold;\">Overall Performance: <span style=\"color: green;\">" + strconv.FormatFloat(gtol, 'f', 2, 64) + "</span></span>\n"
 	}
 	output += "<br>\n"
 	output += "<span style=\"font-weight: bold;\">Graphs:</span><br>\n"
