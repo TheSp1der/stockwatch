@@ -1,15 +1,3 @@
-/******************************************************************************
-	stock.go
-	market interaction functrions for retrieving data, determining open
-	trading hours, etc
-
-	data is provided for free by the API from IEX, you can read	more about
-	the API here:
-	https://iextrading.com/developer/
-
-	please read IEX's terms of use prior to using this program:
-	https://iextrading.com/api-exhibit-a/
-******************************************************************************/
 package main
 
 import (
@@ -27,7 +15,7 @@ import (
 )
 
 // stockCurrent will retrieve the market values and write the
-// results to the terminal
+// results to the terminal.
 func stockCurrent() {
 	var (
 		err       error
@@ -43,7 +31,7 @@ func stockCurrent() {
 }
 
 // stockMonitor is the entrypoint for monitoring the market in an
-// infinite method, must have e-mail configured for EOD messages
+// infinite method, must have e-mail configured for EOD messages.
 func stockMonitor() {
 	var (
 		err       error
@@ -91,7 +79,7 @@ func stockMonitor() {
 }
 
 // marketStatus will determine if the market is open, if it is closed
-// it will return the time until it is open again
+// it will return the time until it is open again.
 func marketStatus() (bool, time.Duration) {
 	var (
 		o int
@@ -133,7 +121,7 @@ func marketStatus() (bool, time.Duration) {
 	return false, open.Sub(ct)
 }
 
-// getPrices will get the current stock data
+// getPrices will get the current stock data.
 func getPrices() (iex, error) {
 	var (
 		err       error

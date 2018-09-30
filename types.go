@@ -1,18 +1,14 @@
-/******************************************************************************
-	types.go
-	provides structs and maps for all associated functions
-******************************************************************************/
 package main
 
 // httpHeader is a struct for http connections to submit multiple
-// headers with requests/gets/posts/etc
+// headers with requests/gets/posts/etc.
 type httpHeader []struct {
 	Name  string
 	Value string
 }
 
 // investments is a struct for tracking investment positions for
-// calculations of gains/losses
+// calculations of gains/losses.
 type investments []investment
 type investment struct {
 	Ticker   string
@@ -20,7 +16,7 @@ type investment struct {
 	Price    float32
 }
 
-// iex is a struct for the data returned by the iex api
+// iex is a struct for the data returned by the iex api.
 type iex map[string]iexData
 type iexData struct {
 	Quote   iexQuote   `json:"quote"`
@@ -135,7 +131,6 @@ type iexStats struct {
 	Year5ChangePercent  float64     `json:"year5ChangePercent"`
 	YtdChangePercent    float64     `json:"ytdChangePercent"`
 }
-
 type iexOhlc struct {
 	Close struct {
 		Price float64 `json:"price"`

@@ -1,8 +1,3 @@
-/******************************************************************************
-	init.go
-	process initialization functions for preparing global variables and
-	retrieving options from the command line and/or environment
-******************************************************************************/
 package main
 
 import (
@@ -32,7 +27,7 @@ var (
 	timeFormat = "2006-01-02 15:04:05"
 )
 
-// getEnvString returns string from environment variable
+// getEnvString returns string from environment variable.
 func getEnvString(env string, def string) string {
 	val := os.Getenv(env)
 	if len(val) == 0 {
@@ -41,7 +36,7 @@ func getEnvString(env string, def string) string {
 	return val
 }
 
-// getEnvBool returns boolean from environment variable
+// getEnvBool returns boolean from environment variable.
 func getEnvBool(env string, def bool) bool {
 	var (
 		err error
@@ -60,7 +55,7 @@ func getEnvBool(env string, def bool) bool {
 	return ret
 }
 
-// getEnvInt returns int from environment variable
+// getEnvInt returns int from environment variable.
 func getEnvInt(env string, def int) int {
 	var (
 		err error
@@ -79,12 +74,12 @@ func getEnvInt(env string, def int) int {
 	return ret
 }
 
-// String format flag value
+// String format flag value.
 func (i *investments) String() string {
 	return fmt.Sprint(*i)
 }
 
-// Set set flag value
+// Set set flag value.
 func (i *investments) Set(value string) error {
 	if len(strings.Split(value, ",")) == 3 {
 		var (
@@ -109,7 +104,7 @@ func (i *investments) Set(value string) error {
 	return nil
 }
 
-// init configures the parameters the process needs to run
+// init configures the parameters the process needs to run.
 func init() {
 	// read command line options
 	flag.Var(&cmdLnInvestments, "invest", "Formatted investment in the form of \"Ticker,Quantity,Price\".")

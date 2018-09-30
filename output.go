@@ -1,7 +1,3 @@
-/******************************************************************************
-	output.go
-	prepares and formates output for display
-******************************************************************************/
 package main
 
 import (
@@ -15,7 +11,7 @@ import (
 
 // displayTermnal returns a string for display in the terminal window of
 // calculated and tracked stocks and the overall gains/losses of provided
-// investments
+// investments.
 func displayTerminal(stockData iex) string {
 	var (
 		gtol    float32
@@ -113,7 +109,7 @@ func displayTerminal(stockData iex) string {
 }
 
 // displayHTML returns a string for e-mail messages of calculated and
-// tracked stocks and the overall gains/losses of provided investments
+// tracked stocks and the overall gains/losses of provided investments.
 func displayHTML(stockData iex) string {
 	var (
 		gtol   float32
@@ -203,7 +199,7 @@ func displayHTML(stockData iex) string {
 
 // alignLeft will format the table data to the left of the cell
 // and will trim off characters in the event the output is too
-// long
+// long.
 func alignLeft(input string, width int) string {
 	r := []rune(input)
 
@@ -218,7 +214,7 @@ func alignLeft(input string, width int) string {
 
 // alignRight will format the table data to the right of the cell
 // and will trim off characters in the event the output is too
-// long
+// long.
 func alignRight(input string, width int) string {
 	r := []rune(input)
 

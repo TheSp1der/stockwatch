@@ -1,8 +1,3 @@
-/******************************************************************************
-	mail.go
-	mail client functions for interacting with remote mail servers
-	i.e. sending mail
-******************************************************************************/
 package main
 
 import (
@@ -10,7 +5,7 @@ import (
 	"net/smtp"
 )
 
-// basicMailSend will connect to a remote mail server without authentication and send a message
+// basicMailSend will connect to a remote mail server without authentication and send a message.
 func basicMailSend(host string, to string, from string, subject string, body string) error {
 	var (
 		message string

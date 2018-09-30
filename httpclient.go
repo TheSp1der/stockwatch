@@ -1,7 +1,3 @@
-/******************************************************************************
-	httpclient.go
-	http client functions for interacting with remote http web servers
-******************************************************************************/
 package main
 
 import (
@@ -13,6 +9,7 @@ import (
 	"time"
 )
 
+// httpGet performs a simple get against a remote webserver.
 func httpGet(url string, headers httpHeader) ([]byte, error) {
 	var (
 		err    error          // error handler
