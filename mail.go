@@ -10,6 +10,7 @@ func basicMailSend(host string, to string, from string, subject string, body str
 	var (
 		message string
 		buf *bytes.Buffer
+		uuid = getUUID()
 	)
 	// connect to the remote server
 	client, err := smtp.Dial(host)
@@ -34,13 +35,19 @@ func basicMailSend(host string, to string, from string, subject string, body str
 	message = "From: " + from + "\n"
 	message += "To: " + to + "\n"
 	message += "Subject: " + subject + "\n"
+	message += "X-Mailer: GoLang net/smtp\n"
 	message += "MIME-Version: 1.0\n"
-	message += "Content-Type: text/html; charset=UTF-8\n"
-	message += "<html>\n"
-	message += "<body>\n"
-	message += body
-	message += "</body>\n"
-	message += "</html>\n"
+	message += "Content-Type: multipart/alternative; boundary=\""+ uuid +"\"\n"
+	message += "--" + uuid + "\n"
+	message += "Content-Type: text/plain; charset=\"UTF-8\"\n"
+	message += "Please view this message in a client capable of displaying HTML\n"
+	message += "encoded messages.\n"
+	message += "\n"
+	message += "--" + uuid + "\n"
+	message += "Content-Type: text/html; charset=\"UTF-8\"\n"
+	message += body + "\n"
+	message += "\n"
+	message += "--" + uuid + "--\n"
 	message += "\n"
 
 	// set up connection
