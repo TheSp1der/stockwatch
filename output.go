@@ -57,7 +57,7 @@ func displayTerminal(stock iex) string {
 			cn   string  // company name
 			cv   string  // current value
 			ch   string  // change
-			ival float64 // // investment value
+			ival float64 // investment value
 			cval float64 // current value
 			diff float64 // difference
 			totl float64 // total difference
@@ -139,34 +139,42 @@ func displayHTML(stock iex) string {
 	)
 
 	// create the template
-	tplt := "<span style=\"font-weight: bold;\">Stock report as of {{.CurrentTime}}</span><br>\n"
-	tplt += "<br>\n"
-	tplt += "<table style=\"min-width: 700px;\">\n"
-	tplt += "   <tr style=\"border-bottom: 4px solid gray;\">\n"
-	tplt += "      <th style=\"text-align: left;\">Company Name</th>\n"
-	tplt += "      <th style=\"text-align: right;\">Market Value</th>\n"
-	tplt += "      <th style=\"text-align: right;\">Today's Change</th>\n"
-	tplt += "      <th style=\"text-align: right;\">Gain/Loss</th>\n"
-	tplt += "   </tr>\n"
+	tplt := "<!doctype html>\n"
+	tplt += "<html xmlns=\"http://www.w3.org/1999/xhtml\">\n"
+	tplt += "<head>\n"
+	tplt += "   <title></title>"
+	tplt += "   <meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\">\n"
+	tplt += "</head>\n"
+	tplt += "<body>\n"
+	tplt += "   <span style=\"font-weight: bold;\">Stock report as of {{.CurrentTime}}</span><br>\n"
+	tplt += "   <br>\n"
+	tplt += "   <table style=\"min-width: 700px;\">\n"
+	tplt += "      <tr style=\"border-bottom: 4px solid gray;\">\n"
+	tplt += "         <th style=\"text-align: left;\">Company Name</th>\n"
+	tplt += "         <th style=\"text-align: right;\">Market Value</th>\n"
+	tplt += "         <th style=\"text-align: right;\">Today's Change</th>\n"
+	tplt += "         <th style=\"text-align: right;\">Gain/Loss</th>\n"
+	tplt += "      </tr>\n"
 	tplt += "{{- range .Stock}}\n"
-	tplt += "   <tr style=\"border-bottom: 1px solid gray;\">\n"
-	tplt += "      <td style=\"text-align: left;\">{{.CompanyName}}</td>\n"
-	tplt += "      <td style=\"text-align: right;\">{{.CurrentValue}}</td>\n"
-	tplt += "      <td style=\"text-align: right;\">{{.Change}}</td>\n"
-	tplt += "      <td style=\"text-align: right;\">{{.GL}}</td>\n"
-	tplt += "   </tr>\n"
-	tplt += "{{- end }}\n"
-	tplt += "</table>\n"
-	tplt += "<br>\n"
-	tplt += "{{- if .TotalGainLoss}}\n"
-	tplt += "<span style=\"font-weight: bold;\">Overall Performance: {{.TotalGainLoss}}</span>\n"
-	tplt += "{{- end}}\n"
-	tplt += "<br>\n"
-	tplt += "<br>\n"
-	tplt += "{{- range .Stock}}\n"
-	tplt += "<img src=\"https://finviz.com/chart.ashx?t={{.Symbol}}\"><br>\n"
-	tplt += "{{- end}}\n"
-	tplt += "<br>\n"
+	tplt += "      <tr style=\"border-bottom: 1px solid gray;\">\n"
+	tplt += "         <td style=\"text-align: left;\">{{.CompanyName}}</td>\n"
+	tplt += "         <td style=\"text-align: right;\">{{.CurrentValue}}</td>\n"
+	tplt += "         <td style=\"text-align: right;\">{{.Change}}</td>\n"
+	tplt += "         <td style=\"text-align: right;\">{{.GL}}</td>\n"
+	tplt += "      </tr>\n"
+	tplt += "   {{- end }}\n"
+	tplt += "   </table>\n"
+	tplt += "   <br>\n"
+	tplt += "   {{- if .TotalGainLoss}}\n"
+	tplt += "   <span style=\"font-weight: bold;\">Overall Performance: {{.TotalGainLoss}}</span>\n"
+	tplt += "   {{- end}}\n"
+	tplt += "   <br>\n"
+	tplt += "   <br>\n"
+	tplt += "   {{- range .Stock}}\n"
+	tplt += "   <a href=\"https://finviz.com/quote.ashx?t={{.Symbol}}\">{{.CompanyName}}</a><br>\n"
+	tplt += "   <img src=\"https://finviz.com/chart.ashx?t={{.Symbol}}\"><br>\n"
+	tplt += "   {{- end}}\n"
+	tplt += "</body>\n"
 
 	// initialize data stock map
 	data.Stock = make(map[string]stockData)
@@ -221,8 +229,9 @@ func displayHTML(stock iex) string {
 			t = "<span style=\"color: green;\">" + strconv.FormatFloat(totl, 'f', 2, 64) + "</span>"
 		}
 
-		data.Stock[stock[k].Company.Symbol] = stockData{CompanyName: cn,
-			CurrentValue: cv,
+		data.Stock[stock[k].Company.Symbol] = stockData{
+			CompanyName:  strings.TrimSpace(cn),
+			CurrentValue: strings.TrimSpace(cv),
 			Change:       ch,
 			GL:           t,
 			Symbol:       strings.TrimSpace(strings.ToLower(stock[k].Company.Symbol)),
