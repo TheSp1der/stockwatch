@@ -10,8 +10,8 @@ import (
 	"encoding/json"
 	"net/url"
 
-	"golang.org/x/crypto/ssh/terminal"
 	"github.com/TheSp1der/goerror"
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 // stockCurrent will retrieve the market values and write the
