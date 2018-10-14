@@ -1,9 +1,6 @@
 package main
 
 import (
-	"fmt"
-	"os"
-	"strconv"
 	"strings"
 	"time"
 
@@ -11,72 +8,7 @@ import (
 	"net/url"
 
 	"github.com/TheSp1der/goerror"
-	"golang.org/x/crypto/ssh/terminal"
 )
-
-// stockCurrent will retrieve the market values and write the
-// results to the terminal.
-func stockCurrent() {
-	var (
-		err       error
-		stockData iex
-	)
-
-	if stockData, err = getPrices(); err != nil {
-		goerror.Warning(err)
-	}
-
-	// output the formatted stock information
-	fmt.Println(displayTerminal(stockData))
-}
-
-// stockMonitor is the entrypoint for monitoring the market in an
-// infinite method, must have e-mail configured for EOD messages.
-func stockMonitor() {
-	var (
-		err       error
-		sleepTime time.Duration
-	)
-
-	// begin loop
-	for {
-		// if market is open, sleep for 5 seconds
-		if o, s := marketStatus(); o {
-			sleepTime = time.Duration(time.Second * 5)
-			// if market is closed send EOD message and sleep until it opens
-		} else {
-			var stockData iex
-			sleepTime = s
-
-			if stockData, err = getPrices(); err != nil {
-				goerror.Warning(err)
-			}
-
-			if err = basicMailSend(cmdLnEmailHost+":"+strconv.Itoa(cmdLnEmailPort), cmdLnEmailAddress, cmdLnEmailFrom, "Stock Alert", displayHTML(stockData)); err != nil {
-				goerror.Warning(err)
-			}
-
-			fmt.Println("Market is currently closed.")
-			fmt.Println("Script will resume at " + time.Now().Add(time.Duration(sleepTime)).Format(timeFormat) + " which is in " + strconv.FormatFloat(sleepTime.Seconds(), 'f', 0, 64) + " seconds.")
-		}
-
-		// if verbose update terminal
-		if cmdLnVerbose {
-
-			// check to see if we are running in a terminal
-			if terminal.IsTerminal(int(os.Stdout.Fd())) {
-				// reset the location of the cursor
-				fmt.Printf("\033[0;0H")
-			}
-
-			// print the current prices to the screen
-			stockCurrent()
-		}
-
-		// sleep
-		time.Sleep(sleepTime)
-	}
-}
 
 // marketStatus will determine if the market is open, if it is closed
 // it will return the time until it is open again.
