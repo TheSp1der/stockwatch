@@ -10,9 +10,11 @@ import (
 )
 
 func webRoot(resp http.ResponseWriter, req *http.Request) {
+	resp.Header().Add("Cache-Control", "no-cache, no-store, must-revalidate")
+	resp.Header().Add("Expires", "0")	
 	resp.Header().Add("Content-Type", "text/html")
 	if req.Method == "GET" {
-		resp.Write([]byte(""))
+		resp.Write([]byte(displayWeb(sData)))
 	}
 }
 
