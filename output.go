@@ -309,20 +309,21 @@ func displayWeb(stock iex) string {
 			<!-- Required meta tags -->
 			<meta charset="utf-8">
 			<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+			<meta http-equiv="refresh" content="5">
 			<!-- Bootstrap CSS -->
 			<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" crossorigin="anonymous">
-			<title>Hello, world!</title>
+			<title>Stockwatch</title>
 		</head>
 		<body>
 			<main role="main">
 				<div class="jumbotron">
 					<div class="container">
-						<h1 class="display-5">Stocktrack</h1>
+						<h1 class="display-5">Stockwatch</h1>
 						<p class="lead">A simple stock tracker written in Go</p>
 					</div>
 				</div>
 				<div class="container">
-					<table class="table table-striped">
+					<table class="table-sm table-striped mx-auto">
 						<thead>
 							<tr>
 								<th>Company Name</th>
