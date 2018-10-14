@@ -20,9 +20,11 @@ var (
 	cmdLnEmailHost    string
 	cmdLnEmailPort    int
 	cmdLnEmailFrom    string
-	cmdLnVerbose      bool
+	cmdLnNoConsole    bool
+	cmdLnHTTPPort     int
 
 	trackedTickers []string
+	sData          iex
 
 	timeFormat = "2006-01-02 15:04:05"
 )
@@ -109,11 +111,12 @@ func init() {
 	// read command line options
 	flag.Var(&cmdLnInvestments, "invest", "Formatted investment in the form of \"Ticker,Quantity,Price\".")
 	stocks := flag.String("ticker", getEnvString("TICKERS", ""), "(TICKERS)\nComma seperated list of stocks to report.")
-	mailAddress := flag.String("email", getEnvString("EMAIL_ADDR", ""), "(EMAIL_ADDR)\nDestination e-mail address that will receive the end of day summary.")
-	mailHost := flag.String("host", getEnvString("EMAIL_HOST", ""), "(EMAIL_HOST)\nE-Mail server host.")
-	mailPort := flag.Int("port", getEnvInt("EMAIL_PORT", 25), "(EMAIL_PORT)\nE-Mail server port.")
-	mailFrom := flag.String("from", getEnvString("EMAIL_FROM", "noreply@localhost"), "(EMAIL_FROM)\nAddress the message will be sent from.")
-	verbose := flag.Bool("verbose", getEnvBool("VERBOSE", false), "(VERBOSE)\nWhen run in mail mode display prices when market is open.")
+	mailAddress := flag.String("mailto", getEnvString("EMAIL_TO", ""), "(EMAIL_TO)\nDestination e-mail address that will receive the end of day summary.")
+	mailHost := flag.String("mailhost", getEnvString("EMAIL_HOST", ""), "(EMAIL_HOST)\nE-Mail server host.")
+	mailPort := flag.Int("mailport", getEnvInt("EMAIL_PORT", 25), "(EMAIL_PORT)\nE-Mail server port.")
+	mailFrom := flag.String("mailfrom", getEnvString("EMAIL_FROM", "noreply@localhost"), "(EMAIL_FROM)\nAddress the message will be sent from.")
+	noConsole := flag.Bool("noconsole", getEnvBool("NO_CONSOLE", false), "(NO_CONSOLE)\nDon't display stock data in the console.")
+	webPort := flag.Int("webport", getEnvInt("WEB_PORT", 0), "(WEB_PORT)\nWeb server listen port.")
 	flag.Parse()
 
 	// set global variables
@@ -122,7 +125,8 @@ func init() {
 	cmdLnEmailHost = *mailHost
 	cmdLnEmailPort = *mailPort
 	cmdLnEmailFrom = *mailFrom
-	cmdLnVerbose = *verbose
+	cmdLnNoConsole = *noConsole
+	cmdLnHTTPPort = *webPort
 
 	// convert input to struct
 	re := regexp.MustCompile(`(\s+)?,(\s+)?`)
