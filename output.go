@@ -26,20 +26,20 @@ func displayTerminal(stock iex) string {
 	)
 
 	// create the template
-	tplt := ".-----------------------------------------------------------------------------.\n"
+	tplt := ".------------------------------------------------------------------------------.\n"
 	tplt += "| Current Time: {{.CurrentTime}} Market Status: {{.MarketStatus}} |\n"
-	tplt += "|--------------------------------.--------------.----------------.------------|\n"
-	tplt += "| Company Name                   | Market Value | Today's Change | Gain/Loss  |\n"
-	tplt += "|--------------------------------|--------------|----------------|------------|\n"
+	tplt += "|---------------------------------.--------------.----------------.------------|\n"
+	tplt += "| Company Name                    | Market Value | Today's Change | Gain/Loss  |\n"
+	tplt += "|---------------------------------|--------------|----------------|------------|\n"
 	tplt += "{{- range .Stock}}\n"
 	tplt += "| {{.CompanyName}} | {{.CurrentValue}} | {{.Change}} | {{.GL}} |\n"
 	tplt += "{{- end }}\n"
 	tplt += "{{- if .TotalGainLoss}}\n"
-	tplt += "|--------------------------------'--------------'----------------'------------|\n"
+	tplt += "|---------------------------------'--------------'----------------'------------|\n"
 	tplt += "| Total Investment Value: {{.TotalGainLoss}} |\n"
-	tplt += "`-----------------------------------------------------------------------------'\n"
+	tplt += "`------------------------------------------------------------------------------'\n"
 	tplt += "{{- else}}\n"
-	tplt += "`--------------------------------'--------------'----------------'------------'\n"
+	tplt += "`---------------------------------'--------------'----------------'------------'\n"
 	tplt += "{{- end}}"
 
 	// initialize data stock map
@@ -79,7 +79,7 @@ func displayTerminal(stock iex) string {
 		gtol = gtol + totl
 
 		// start setting values for template data struct
-		cn = alignLeft(stock[k].Company.CompanyName, 30)
+		cn = alignLeft(stock[k].Company.CompanyName, 31)
 		cv = alignRight(strconv.FormatFloat(stock[k].Price, 'f', 2, 64), 12)
 		if stock[k].Quote.Change < 0 {
 			ch = color.RedString(alignRight(strconv.FormatFloat(stock[k].Quote.Change, 'f', 2, 64), 14))
@@ -108,14 +108,14 @@ func displayTerminal(stock iex) string {
 	// set the date/time and market status
 	data.CurrentTime = alignLeft(time.Now().Local().Format(timeFormat), 38)
 	if m, _ := marketStatus(); m {
-		data.MarketStatus = color.GreenString(alignLeft("OPEN", 7))
+		data.MarketStatus = color.GreenString(alignLeft("OPEN", 8))
 	} else {
-		data.MarketStatus = color.YellowString(alignRight("CLOSED", 7))
+		data.MarketStatus = color.YellowString(alignRight("CLOSED", 8))
 	}
 	if gtol < 0 {
-		data.TotalGainLoss = color.RedString(alignRight(strconv.FormatFloat(gtol, 'f', 2, 64), 51))
+		data.TotalGainLoss = color.RedString(alignRight(strconv.FormatFloat(gtol, 'f', 2, 64), 52))
 	} else if gtol > 0 {
-		data.TotalGainLoss = color.GreenString(alignRight(strconv.FormatFloat(gtol, 'f', 2, 64), 51))
+		data.TotalGainLoss = color.GreenString(alignRight(strconv.FormatFloat(gtol, 'f', 2, 64), 52))
 	}
 
 	outputTemplate = template.Must(template.New("console").Parse(tplt))
