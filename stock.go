@@ -10,6 +10,37 @@ import (
 	"github.com/TheSp1der/goerror"
 )
 
+// updateStockData maintains an up to date global variable
+func updateStockData() {
+	var (
+		err     error
+		runTime = time.Now()
+	)
+
+	for {
+		if time.Now().After(runTime) || time.Now().Equal(runTime) {
+			sData, err = getPrices()
+			if err != nil {
+				goerror.Warning(err)
+			}
+		}
+
+		if time.Now().After(runTime) {
+			open, openTime := marketStatus()
+			if open {
+				runTime = time.Now().Add(time.Duration(time.Second * 5))
+			} else {
+				runTime = time.Now().Add(time.Duration(time.Minute * 60))
+				if time.Now().Add(openTime).Before(runTime) {
+					runTime = time.Now().Add(openTime)
+				}
+			}
+		}
+
+		time.Sleep(time.Duration(time.Millisecond * 100))
+	}
+}
+
 // marketStatus will determine if the market is open, if it is closed
 // it will return the time until it is open again.
 func marketStatus() (bool, time.Duration) {
