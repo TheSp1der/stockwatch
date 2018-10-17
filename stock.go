@@ -10,18 +10,20 @@ import (
 	"github.com/TheSp1der/goerror"
 )
 
-// updateStockData maintains an up to date global variable
-func updateStockData() {
+// updateStockData maintains up to date stock data (dependent on market status)
+func updateStockData(sData chan<- iex) {
 	var (
 		err     error
+		s       iex
 		runTime = time.Now()
 	)
 
 	for {
 		if time.Now().After(runTime) || time.Now().Equal(runTime) {
-			sData, err = getPrices()
+			s, err = getPrices()
 			if err != nil {
-				goerror.Warning(err)
+				time.Sleep(time.Duration(time.Millisecond * 500))
+				continue
 			}
 		}
 
@@ -35,6 +37,12 @@ func updateStockData() {
 					runTime = time.Now().Add(openTime)
 				}
 			}
+		}
+
+		// non blocking channel read
+		select {
+		case sData <- s:
+		default:
 		}
 
 		time.Sleep(time.Duration(time.Millisecond * 100))
