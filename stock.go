@@ -45,6 +45,8 @@ func updateStockData(sData chan<- iex) {
 		default:
 		}
 
+		// slow the loop down so it does not use un-necessary cpu
+		// this will also limit reads to once every 100 milliseconds
 		time.Sleep(time.Duration(time.Millisecond * 100))
 	}
 }
