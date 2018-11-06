@@ -1,5 +1,7 @@
 # [stockwatch](//github.com/TheSp1der/stockwatch)
 
+[![Go Report Card](https://goreportcard.com/badge/github.com/TheSp1der/stockwatch)](https://goreportcard.com/report/github.com/TheSp1der/stockwatch)
+
 ## Table of Contents
 
 1. [Description](#description)
