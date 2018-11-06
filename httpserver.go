@@ -9,7 +9,7 @@ import (
 	"github.com/TheSp1der/goerror"
 )
 
-func webRoot(resp http.ResponseWriter, req *http.Request, sData <- chan iex) {
+func webRoot(resp http.ResponseWriter, req *http.Request, sData <-chan iex) {
 	resp.Header().Add("Cache-Control", "no-cache, no-store, must-revalidate")
 	resp.Header().Add("Expires", "0")
 	resp.Header().Add("Content-Type", "text/html")

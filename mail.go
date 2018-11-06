@@ -9,8 +9,8 @@ import (
 func basicMailSend(host string, to string, from string, subject string, body string) error {
 	var (
 		message string
-		buf *bytes.Buffer
-		uuid = getUUID()
+		buf     *bytes.Buffer
+		uuid    = getUUID()
 	)
 	// connect to the remote server
 	client, err := smtp.Dial(host)
@@ -37,7 +37,7 @@ func basicMailSend(host string, to string, from string, subject string, body str
 	message += "Subject: " + subject + "\n"
 	message += "X-Mailer: GoLang net/smtp\n"
 	message += "MIME-Version: 1.0\n"
-	message += "Content-Type: multipart/alternative; boundary=\""+ uuid +"\"\n"
+	message += "Content-Type: multipart/alternative; boundary=\"" + uuid + "\"\n"
 	message += "--" + uuid + "\n"
 	message += "Content-Type: text/plain; charset=\"UTF-8\"\n"
 	message += "\n"
