@@ -133,7 +133,6 @@ type iexStats struct {
 	RevenuePerEmployee  int64       `json:"revenuePerEmployee"`
 	RevenuePerShare     int64       `json:"revenuePerShare"`
 	SharesOutstanding   int64       `json:"sharesOutstanding"`
-	ShortDate           string      `json:"shortDate"`
 	ShortInterest       int64       `json:"shortInterest"`
 	ShortRatio          float64     `json:"shortRatio"`
 	Symbol              string      `json:"symbol"`
