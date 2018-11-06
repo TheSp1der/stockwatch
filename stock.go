@@ -80,7 +80,7 @@ func marketStatus() (bool, time.Duration) {
 		c = 2
 	default:
 		o = 1
-		o = 1
+		c = 1
 	}
 	open := time.Date(ct.Year(), ct.Month(), ct.Day()+o, 9, 30, 0, 0, est)
 	close := time.Date(ct.Year(), ct.Month(), ct.Day()+c, 16, 0, 0, 0, est)
