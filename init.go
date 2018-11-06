@@ -109,7 +109,7 @@ func (i *investments) Set(value string) error {
 func init() {
 	// read command line options
 	flag.Var(&cmdLnInvestments, "invest", "Formatted investment in the form of \"Ticker,Quantity,Price\".")
-	stocks := flag.String("ticker", getEnvString("TICKERS", ""), "(TICKERS)\nComma seperated list of stocks to report.")
+	stocks := flag.String("ticker", getEnvString("TICKERS", ""), "(TICKERS)\nComma saperated list of stocks to report.")
 	mailAddress := flag.String("mailto", getEnvString("EMAIL_TO", ""), "(EMAIL_TO)\nDestination e-mail address that will receive the end of day summary.")
 	mailHost := flag.String("mailhost", getEnvString("EMAIL_HOST", ""), "(EMAIL_HOST)\nE-Mail server host.")
 	mailPort := flag.Int("mailport", getEnvInt("EMAIL_PORT", 25), "(EMAIL_PORT)\nE-Mail server port.")
