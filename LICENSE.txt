@@ -1,6 +1,6 @@
 BSD 2-Clause License
 
-Copyright (c) [year], [fullname]
+Copyright (c) 2018, TheSp1der
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
