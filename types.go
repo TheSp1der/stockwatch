@@ -115,7 +115,6 @@ type iexStats struct {
 	InsiderPercent      interface{} `json:"insiderPercent"`
 	InstitutionPercent  float64     `json:"institutionPercent"`
 	LatestEPS           float64     `json:"latestEPS"`
-	LatestEPSDate       string      `json:"latestEPSDate"`
 	Marketcap           int64       `json:"marketcap"`
 	Month1ChangePercent float64     `json:"month1ChangePercent"`
 	Month3ChangePercent float64     `json:"month3ChangePercent"`
