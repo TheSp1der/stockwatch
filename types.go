@@ -21,7 +21,7 @@ type outputStructure struct {
 	CurrentTime   string
 	MarketStatus  string
 	TotalGainLoss string
-	Stock         map[string]stockData
+	Stock         []stockData
 }
 type stockData struct {
 	CompanyName  string
