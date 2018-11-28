@@ -13,6 +13,36 @@ import (
 	"github.com/fatih/color"
 )
 
+// alignLeft will format the table data to the left of the cell
+// and will trim off characters in the event the output is too
+// long.
+func alignLeft(input string, width int) string {
+	r := []rune(input)
+
+	if len(r) > width {
+		return string(r[0:width])
+	} else if len(r) < width {
+		s := width - len(r)
+		return string(r) + strings.Repeat(" ", s)
+	}
+	return input
+}
+
+// alignRight will format the table data to the right of the cell
+// and will trim off characters in the event the output is too
+// long.
+func alignRight(input string, width int) string {
+	r := []rune(input)
+
+	if len(r) > width {
+		return string(r[0:width])
+	} else if len(r) < width {
+		s := width - len(r)
+		return strings.Repeat(" ", s) + string(r)
+	}
+	return input
+}
+
 // displayTermnal returns a string for display in the terminal window of
 // calculated and tracked stocks and the overall gains/losses of provided
 // investments.
@@ -21,6 +51,7 @@ func displayTerminal(stock iex) string {
 		err            error
 		outputTemplate *template.Template
 		data           outputStructure
+		stkHolder      []stockData
 		output         bytes.Buffer
 		gtol           float64
 	)
@@ -42,17 +73,7 @@ func displayTerminal(stock iex) string {
 	tplt += "`---------------------------------'--------------'----------------'------------'\n"
 	tplt += "{{- end}}"
 
-	// initialize data stock map
-	data.Stock = make(map[string]stockData)
-
-	// sort stocks for display
-	keys := make([]string, 0, len(stock))
-	for k := range stock {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-
-	for _, k := range keys {
+	for _, k := range stock {
 		var (
 			cn   string  // company name
 			cv   string  // current value
@@ -67,9 +88,9 @@ func displayTerminal(stock iex) string {
 		// calculate the total for the ticker in the event a stock
 		// has multiple investments
 		for _, i := range cmdLnInvestments {
-			if strings.TrimSpace(strings.ToLower(stock[k].Company.Symbol)) == strings.TrimSpace(strings.ToLower(i.Ticker)) {
+			if strings.TrimSpace(strings.ToLower(k.Company.Symbol)) == strings.TrimSpace(strings.ToLower(i.Ticker)) {
 				ival = i.Quantity * i.Price
-				cval = i.Quantity * stock[k].Price
+				cval = i.Quantity * k.Price
 				diff = cval - ival
 				totl = totl + diff
 			}
@@ -79,12 +100,12 @@ func displayTerminal(stock iex) string {
 		gtol = gtol + totl
 
 		// start setting values for template data struct
-		cn = alignLeft(stock[k].Company.CompanyName, 31)
-		cv = alignRight(strconv.FormatFloat(stock[k].Price, 'f', 2, 64), 12)
-		if stock[k].Quote.Change < 0 {
-			ch = color.RedString(alignRight(strconv.FormatFloat(stock[k].Quote.Change, 'f', 2, 64), 14))
-		} else if stock[k].Quote.Change > 0 {
-			ch = color.GreenString(alignRight(strconv.FormatFloat(stock[k].Quote.Change, 'f', 2, 64), 14))
+		cn = alignLeft(k.Company.CompanyName, 31)
+		cv = alignRight(strconv.FormatFloat(k.Price, 'f', 2, 64), 12)
+		if k.Quote.Change < 0 {
+			ch = color.RedString(alignRight(strconv.FormatFloat(k.Quote.Change, 'f', 2, 64), 14))
+		} else if k.Quote.Change > 0 {
+			ch = color.GreenString(alignRight(strconv.FormatFloat(k.Quote.Change, 'f', 2, 64), 14))
 		} else {
 			ch = alignRight("", 14)
 		}
@@ -97,13 +118,23 @@ func displayTerminal(stock iex) string {
 			t = alignRight("", 10)
 		}
 
-		data.Stock[stock[k].Company.Symbol] = stockData{CompanyName: cn,
+		stkHolder = append(stkHolder, stockData{CompanyName: cn,
 			CurrentValue: cv,
 			Change:       ch,
 			GL:           t,
-			Symbol:       strings.TrimSpace(strings.ToLower(stock[k].Company.Symbol)),
-		}
+			Symbol:       strings.TrimSpace(strings.ToLower(k.Company.Symbol)),
+		})
 	}
+
+	// sort by symbol
+	sort.Slice(stkHolder, func(i, j int) bool {
+		return stkHolder[i].Symbol < stkHolder[j].Symbol
+	})
+	// sort by company name (in the event multiple symbols exist for one company)
+	sort.Slice(stkHolder, func(i, j int) bool {
+		return stkHolder[i].CompanyName < stkHolder[j].CompanyName
+	})
+	data.Stock = stkHolder
 
 	// set the date/time and market status
 	data.CurrentTime = alignLeft(time.Now().Local().Format(timeFormat), 38)
@@ -134,6 +165,7 @@ func displayHTML(stock iex) string {
 		err            error
 		outputTemplate *template.Template
 		data           outputStructure
+		stkHolder      []stockData
 		output         bytes.Buffer
 		gtol           float64
 	)
@@ -177,17 +209,7 @@ func displayHTML(stock iex) string {
 	</body>
 </html>`
 
-	// initialize data stock map
-	data.Stock = make(map[string]stockData)
-
-	// sort stocks for display
-	keys := make([]string, 0, len(stock))
-	for k := range stock {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-
-	for _, k := range keys {
+	for _, k := range stock {
 		var (
 			cn   string  // company name
 			cv   string  // current value
@@ -202,9 +224,9 @@ func displayHTML(stock iex) string {
 		// calculate the total for the ticker in the event a stock
 		// has multiple investments
 		for _, i := range cmdLnInvestments {
-			if strings.TrimSpace(strings.ToLower(stock[k].Company.Symbol)) == strings.TrimSpace(strings.ToLower(i.Ticker)) {
+			if strings.TrimSpace(strings.ToLower(k.Company.Symbol)) == strings.TrimSpace(strings.ToLower(i.Ticker)) {
 				ival = i.Quantity * i.Price
-				cval = i.Quantity * stock[k].Price
+				cval = i.Quantity * k.Price
 				diff = cval - ival
 				totl = totl + diff
 			}
@@ -214,12 +236,12 @@ func displayHTML(stock iex) string {
 		gtol = gtol + totl
 
 		// start setting values for template data struct
-		cn = alignLeft(stock[k].Company.CompanyName, 30)
-		cv = alignRight(strconv.FormatFloat(stock[k].Price, 'f', 2, 64), 12)
-		if stock[k].Quote.Change < 0 {
-			ch = `<span style="color: red;">` + strconv.FormatFloat(stock[k].Quote.Change, 'f', 2, 64) + "</span>"
-		} else if stock[k].Quote.Change > 0 {
-			ch = `<span style="color: green;">` + strconv.FormatFloat(stock[k].Quote.Change, 'f', 2, 64) + "</span>"
+		cn = alignLeft(k.Company.CompanyName, 30)
+		cv = alignRight(strconv.FormatFloat(k.Price, 'f', 2, 64), 12)
+		if k.Quote.Change < 0 {
+			ch = `<span style="color: red;">` + strconv.FormatFloat(k.Quote.Change, 'f', 2, 64) + "</span>"
+		} else if k.Quote.Change > 0 {
+			ch = `<span style="color: green;">` + strconv.FormatFloat(k.Quote.Change, 'f', 2, 64) + "</span>"
 		} else {
 			ch = alignRight("", 14)
 		}
@@ -230,14 +252,24 @@ func displayHTML(stock iex) string {
 			t = `<span style="color: green;">` + strconv.FormatFloat(totl, 'f', 2, 64) + "</span>"
 		}
 
-		data.Stock[stock[k].Company.Symbol] = stockData{
+		stkHolder = append(stkHolder, stockData{
 			CompanyName:  strings.TrimSpace(cn),
 			CurrentValue: strings.TrimSpace(cv),
 			Change:       ch,
 			GL:           t,
-			Symbol:       strings.TrimSpace(strings.ToLower(stock[k].Company.Symbol)),
-		}
+			Symbol:       strings.TrimSpace(strings.ToLower(k.Company.Symbol)),
+		})
 	}
+
+	// sort by symbol
+	sort.Slice(stkHolder, func(i, j int) bool {
+		return stkHolder[i].Symbol < stkHolder[j].Symbol
+	})
+	// sort by company name (in the event multiple symbols exist for one company)
+	sort.Slice(stkHolder, func(i, j int) bool {
+		return stkHolder[i].CompanyName < stkHolder[j].CompanyName
+	})
+	data.Stock = stkHolder
 
 	// set the date/time
 	if m, _ := marketStatus(); m {
@@ -262,41 +294,12 @@ func displayHTML(stock iex) string {
 	return output.String()
 }
 
-// alignLeft will format the table data to the left of the cell
-// and will trim off characters in the event the output is too
-// long.
-func alignLeft(input string, width int) string {
-	r := []rune(input)
-
-	if len(r) > width {
-		return string(r[0:width])
-	} else if len(r) < width {
-		s := width - len(r)
-		return string(r) + strings.Repeat(" ", s)
-	}
-	return input
-}
-
-// alignRight will format the table data to the right of the cell
-// and will trim off characters in the event the output is too
-// long.
-func alignRight(input string, width int) string {
-	r := []rune(input)
-
-	if len(r) > width {
-		return string(r[0:width])
-	} else if len(r) < width {
-		s := width - len(r)
-		return strings.Repeat(" ", s) + string(r)
-	}
-	return input
-}
-
 func displayWeb(stock iex) string {
 	var (
 		err            error
 		outputTemplate *template.Template
 		data           outputStructure
+		stkHolder      []stockData
 		output         bytes.Buffer
 		gtol           float64
 	)
@@ -360,17 +363,7 @@ func displayWeb(stock iex) string {
 		</body>
 </html>`
 
-	// initialize data stock map
-	data.Stock = make(map[string]stockData)
-
-	// sort stocks for display
-	keys := make([]string, 0, len(stock))
-	for k := range stock {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-
-	for _, k := range keys {
+	for _, k := range stock {
 		var (
 			cn   string  // company name
 			cv   string  // current value
@@ -385,9 +378,9 @@ func displayWeb(stock iex) string {
 		// calculate the total for the ticker in the event a stock
 		// has multiple investments
 		for _, i := range cmdLnInvestments {
-			if strings.TrimSpace(strings.ToLower(stock[k].Company.Symbol)) == strings.TrimSpace(strings.ToLower(i.Ticker)) {
+			if strings.TrimSpace(strings.ToLower(k.Company.Symbol)) == strings.TrimSpace(strings.ToLower(i.Ticker)) {
 				ival = i.Quantity * i.Price
-				cval = i.Quantity * stock[k].Price
+				cval = i.Quantity * k.Price
 				diff = cval - ival
 				totl = totl + diff
 			}
@@ -397,12 +390,12 @@ func displayWeb(stock iex) string {
 		gtol = gtol + totl
 
 		// start setting values for template data struct
-		cn = alignLeft(stock[k].Company.CompanyName, 30)
-		cv = alignRight(strconv.FormatFloat(stock[k].Price, 'f', 2, 64), 12)
-		if stock[k].Quote.Change < 0 {
-			ch = `<span style="color: red;">` + strconv.FormatFloat(stock[k].Quote.Change, 'f', 2, 64) + "</span>"
-		} else if stock[k].Quote.Change > 0 {
-			ch = `<span style="color: green;">` + strconv.FormatFloat(stock[k].Quote.Change, 'f', 2, 64) + "</span>"
+		cn = alignLeft(k.Company.CompanyName, 30)
+		cv = alignRight(strconv.FormatFloat(k.Price, 'f', 2, 64), 12)
+		if k.Quote.Change < 0 {
+			ch = `<span style="color: red;">` + strconv.FormatFloat(k.Quote.Change, 'f', 2, 64) + "</span>"
+		} else if k.Quote.Change > 0 {
+			ch = `<span style="color: green;">` + strconv.FormatFloat(k.Quote.Change, 'f', 2, 64) + "</span>"
 		} else {
 			ch = alignRight("", 14)
 		}
@@ -413,14 +406,24 @@ func displayWeb(stock iex) string {
 			t = `<span style="color: green;">` + strconv.FormatFloat(totl, 'f', 2, 64) + "</span>"
 		}
 
-		data.Stock[stock[k].Company.Symbol] = stockData{
+		stkHolder = append(stkHolder, stockData{
 			CompanyName:  strings.TrimSpace(cn),
 			CurrentValue: strings.TrimSpace(cv),
 			Change:       ch,
 			GL:           t,
-			Symbol:       strings.TrimSpace(strings.ToLower(stock[k].Company.Symbol)),
-		}
+			Symbol:       strings.TrimSpace(strings.ToLower(k.Company.Symbol)),
+		})
 	}
+
+	// sort by symbol
+	sort.Slice(stkHolder, func(i, j int) bool {
+		return stkHolder[i].Symbol < stkHolder[j].Symbol
+	})
+	// sort by company name (in the event multiple symbols exist for one company)
+	sort.Slice(stkHolder, func(i, j int) bool {
+		return stkHolder[i].CompanyName < stkHolder[j].CompanyName
+	})
+	data.Stock = stkHolder
 
 	// set the date/time
 	if m, _ := marketStatus(); m {
