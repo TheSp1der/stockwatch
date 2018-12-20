@@ -13,20 +13,25 @@ import (
 func main() {
 	sData := make(chan iex)
 
+	// get current prices
 	go updateStockData(sData)
 
+	// output to console
 	if !cmdLnNoConsole {
 		go outputConsole(sData)
 	}
 
+	// output to webserver
 	if cmdLnHTTPPort > 0 && cmdLnHTTPPort < 65535 {
 		go webListener(sData, cmdLnHTTPPort)
 	}
 
+	// end of day e-mail
 	if cmdLnEmailAddress != "" && cmdLnEmailFrom != "" && cmdLnEmailHost != "" {
 		go notifyViaMail(sData)
 	}
 
+	// if everything is fine, loop indefinitely
 	if !cmdLnNoConsole || (cmdLnHTTPPort > 0 && cmdLnHTTPPort < 65535) || (cmdLnEmailAddress != "" && cmdLnEmailFrom != "" && cmdLnEmailHost != "") {
 		for {
 			time.Sleep(time.Duration(time.Second * 5))
@@ -49,11 +54,23 @@ func notifyViaMail(sData chan iex) {
 }
 
 func outputConsole(sData chan iex) {
+	var hData iex
+
 	for {
+		cData := <-sData
+
+		// set cursor to top left position
 		if terminal.IsTerminal(int(os.Stdout.Fd())) {
 			fmt.Printf("\033[0;0H")
 		}
-		fmt.Print(displayTerminal(<-sData))
+
+		// display output
+		fmt.Print(displayTerminal(hData, cData))
+
+		// update historical data
+		hData = cData
+
+		// sleep
 		time.Sleep(time.Duration(time.Second * 5))
 	}
 }

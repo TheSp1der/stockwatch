@@ -46,7 +46,7 @@ func alignRight(input string, width int) string {
 // displayTermnal returns a string for display in the terminal window of
 // calculated and tracked stocks and the overall gains/losses of provided
 // investments.
-func displayTerminal(stock iex) string {
+func displayTerminal(hist, stock iex) string {
 	var (
 		err            error
 		outputTemplate *template.Template
