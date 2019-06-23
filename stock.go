@@ -23,6 +23,8 @@ func dataReader(sData chan<- iexTop) {
 				time.Sleep(time.Millisecond * 500)
 				continue
 			}
+			// send the updated data to the channel
+			sData <- s
 		}
 
 		if time.Now().After(runTime) {
@@ -36,9 +38,6 @@ func dataReader(sData chan<- iexTop) {
 				}
 			}
 		}
-
-		// send the updated data to the channel
-		sData <- s
 
 		// sleep a little to keep cpu usage down
 		time.Sleep(time.Millisecond * 50)
