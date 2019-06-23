@@ -2,45 +2,66 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"strconv"
 	"time"
 
-	"github.com/TheSp1der/goerror"
 	"golang.org/x/crypto/ssh/terminal"
 )
 
 func main() {
-	sData := make(chan iex)
+	dReader := make(chan iexTop)
+	sData := make(chan map[string]*stockData)
 
-	go updateStockData(sData)
+	// start processing market data
+	go dataReader(dReader)
+	go dataDistributer(dReader, sData)
 
-	if !cmdLnNoConsole {
-		go outputConsole(sData)
-	}
-
-	if cmdLnHTTPPort > 0 && cmdLnHTTPPort < 65535 {
-		go webListener(sData, cmdLnHTTPPort)
-	}
-
-	if cmdLnEmailAddress != "" && cmdLnEmailFrom != "" && cmdLnEmailHost != "" {
-		go notifyViaMail(sData)
-	}
-
-	if !cmdLnNoConsole || (cmdLnHTTPPort > 0 && cmdLnHTTPPort < 65535) || (cmdLnEmailAddress != "" && cmdLnEmailFrom != "" && cmdLnEmailHost != "") {
-		for {
-			time.Sleep(time.Duration(time.Second * 5))
+	for i := 0; i < 5; i = i + 1 {
+		for k, s := range <-sData {
+			log.Printf("Stock: %v", k)
+			log.Printf("  Bid: %v", s.Bid)
+			log.Printf("  Ask: %v", s.Ask)
 		}
+
+		time.Sleep(time.Second * 1)
 	}
+
+	/*
+		// start outputting to the console
+		if !stockwatchConfig.NoConsole {
+			go outputConsole(sData)
+		}
+
+		// start the web listener
+		if stockwatchConfig.HTTPPort != 0 {
+			go webListener(sData, stockwatchConfig.HTTPPort)
+		}
+
+		// start e-mail notifier
+		if stockwatchConfig.Mail.Address != "" && stockwatchConfig.Mail.From != "" && stockwatchConfig.Mail.Host != "" {
+			go notifyViaMail(sData)
+		}
+
+		// run the program infinitely
+		if !stockwatchConfig.NoConsole ||
+			stockwatchConfig.HTTPPort != 0 ||
+			(stockwatchConfig.Mail.Address != "" && stockwatchConfig.Mail.From != "" && stockwatchConfig.Mail.Host != "" && stockwatchConfig.Mail.Port != 0) {
+			for {
+				time.Sleep(time.Duration(time.Second * 5))
+			}
+		}
+	*/
 }
 
-func notifyViaMail(sData chan iex) {
+func notifyViaMail(sData chan stockData) {
 	for {
 		open, sleepTime := marketStatus()
 		if !open {
 			time.Sleep(time.Duration(time.Minute * 5))
-			if err := basicMailSend(cmdLnEmailHost+":"+strconv.Itoa(cmdLnEmailPort), cmdLnEmailAddress, cmdLnEmailFrom, "Stock Alert", displayHTML(<-sData)); err != nil {
-				goerror.Warning(err)
+			if err := basicMailSend(stockwatchConfig.Mail.Host+":"+strconv.Itoa(stockwatchConfig.Mail.Port), stockwatchConfig.Mail.Address, stockwatchConfig.Mail.From, "Stock Alert", displayHTML(<-sData)); err != nil {
+				log.Println(err.Error())
 			}
 		}
 
@@ -48,7 +69,7 @@ func notifyViaMail(sData chan iex) {
 	}
 }
 
-func outputConsole(sData chan iex) {
+func outputConsole(sData chan stockData) {
 	for {
 		if terminal.IsTerminal(int(os.Stdout.Fd())) {
 			fmt.Printf("\033[0;0H")

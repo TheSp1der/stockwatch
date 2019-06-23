@@ -1,15 +1,14 @@
 package main
 
 import (
+	"log"
 	"strconv"
 	"time"
 
 	"net/http"
-
-	"github.com/TheSp1der/goerror"
 )
 
-func webRoot(resp http.ResponseWriter, req *http.Request, sData <-chan iex) {
+func webRoot(resp http.ResponseWriter, req *http.Request, sData <-chan stockData) {
 	resp.Header().Add("Cache-Control", "no-cache, no-store, must-revalidate")
 	resp.Header().Add("Expires", "0")
 	resp.Header().Add("Content-Type", "text/html")
@@ -18,7 +17,7 @@ func webRoot(resp http.ResponseWriter, req *http.Request, sData <-chan iex) {
 	}
 }
 
-func webListener(s <-chan iex, port int) {
+func webListener(s <-chan stockData, port int) {
 	ws := http.NewServeMux()
 
 	srv := &http.Server{
@@ -37,6 +36,6 @@ func webListener(s <-chan iex, port int) {
 	})
 
 	if err := srv.ListenAndServe(); err != nil {
-		goerror.Fatal(err)
+		log.Fatal(err.Error())
 	}
 }

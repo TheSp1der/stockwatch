@@ -1,28 +1,26 @@
 package main
 
 import (
+	"log"
 	"strings"
 	"time"
 
 	"encoding/json"
 	"net/url"
-
-	"github.com/TheSp1der/goerror"
 )
 
-// updateStockData maintains up to date stock data (dependent on market status)
-func updateStockData(sData chan<- iex) {
+// updateStockData manages updates to the reader channel
+func dataReader(sData chan<- iexTop) {
 	var (
-		err     error
-		s       iex
 		runTime = time.Now()
+		s       iexTop
 	)
 
 	for {
 		if time.Now().After(runTime) || time.Now().Equal(runTime) {
-			s, err = getPrices()
-			if err != nil {
-				time.Sleep(time.Duration(time.Millisecond * 500))
+			var err error
+			if s, err = getPrices(); err != nil {
+				time.Sleep(time.Millisecond * 500)
 				continue
 			}
 		}
@@ -30,24 +28,57 @@ func updateStockData(sData chan<- iex) {
 		if time.Now().After(runTime) {
 			open, openTime := marketStatus()
 			if open {
-				runTime = time.Now().Add(time.Duration(time.Second * 5))
+				runTime = time.Now().Add(time.Millisecond * time.Duration(stockwatchConfig.PollFrequency*1000))
 			} else {
-				runTime = time.Now().Add(time.Duration(time.Minute * 60))
+				runTime = time.Now().Add(time.Duration(time.Minute * 120))
 				if time.Now().Add(openTime).Before(runTime) {
 					runTime = time.Now().Add(openTime)
 				}
 			}
 		}
 
-		// non blocking channel read
+		// send the updated data to the channel
+		sData <- s
+
+		// sleep a little to keep cpu usage down
+		time.Sleep(time.Millisecond * 50)
+	}
+}
+
+func dataDistributer(newData <-chan iexTop, dataSender chan<- map[string]*stockData) {
+	sData := make(map[string]*stockData)
+
+	// get company data for stocks
+	for _, stock := range stockwatchConfig.TrackedStocks {
+		log.Printf("Getting company data for: %v", strings.ToUpper(stock))
+		cN, err := getCompanyName(strings.ToUpper(stock))
+		if err != nil {
+			log.Fatal("Unable to obtain the company name for " + strings.ToUpper(stock))
+		}
+
+		sData[strings.ToUpper(stock)] = &stockData{
+			CompanyName: cN,
+		}
+	}
+
+	for {
 		select {
-		case sData <- s:
+		// read
+		case tmp := <-newData:
+			// update sData holder
+			for _, stock := range tmp {
+				sData[strings.ToUpper(stock.Symbol)] = &stockData{
+					Ask: stock.AskPrice,
+					Bid: stock.BidPrice,
+				}
+			}
+
+		// send
+		case dataSender <- sData:
 		default:
 		}
 
-		// slow the loop down so it does not use un-necessary cpu
-		// this will also limit reads to once every 100 milliseconds
-		time.Sleep(time.Duration(time.Millisecond * 100))
+		time.Sleep(time.Millisecond * 50)
 	}
 }
 
@@ -98,37 +129,81 @@ func marketStatus() (bool, time.Duration) {
 	return false, open.Sub(ct)
 }
 
-// getPrices will get the current stock data.
-func getPrices() (iex, error) {
-	var (
-		err       error
-		newURL    url.URL
-		params    url.Values
-		headers   httpHeader
-		resp      []byte
-		stockData iex
-	)
-
+// get company name from ticker
+func getCompanyName(ticker string) (iexCompany, error) {
 	// prepare the url
+	var newURL url.URL
 	newURL.Scheme = "https"
-	newURL.Host = "api.iextrading.com"
-	newURL.Path = "1.0/stock/market/batch"
+	newURL.Host = "sandbox.iexapis.com"
+	newURL.Path = "v1/stock/" + ticker + "/company"
 
 	// url parameters
-	params = newURL.Query()
-	params.Add("symbols", strings.Join(trackedTickers, ","))
-	params.Add("types", "quote,price,company,stats,ohlc")
+	params := newURL.Query()
+	params.Add("token", stockwatchConfig.IexAPIKey)
+	params.Add("format", "json")
 	newURL.RawQuery = params.Encode()
 
 	// connect and retrieve data from remote source
-	if resp, err = httpGet(newURL.String(), headers); err != nil {
-		return stockData, err
+	resp, err := httpGet(
+		newURL.String(),
+		[]struct {
+			Name, Value string
+		}{
+			{
+				Name:  "Content-Type",
+				Value: "application/json",
+			},
+		})
+	if err != nil {
+		return iexCompany{}, err
 	}
 
 	// unmarshal response
-	if err = json.Unmarshal(resp, &stockData); err != nil {
-		goerror.Info(err)
+	var jsonIexCompany iexCompany
+	if err = json.Unmarshal(resp, &jsonIexCompany); err != nil {
+		log.Println(err.Error())
 	}
 
-	return stockData, nil
+	return jsonIexCompany, nil
+}
+
+// getPrices will get the current stock data.
+func getPrices() (iexTop, error) {
+	// prepare the url
+	var newURL url.URL
+	newURL.Scheme = "https"
+	newURL.Host = "sandbox.iexapis.com"
+	newURL.Path = "v1/tops"
+
+	// url parameters
+	params := newURL.Query()
+	params.Add("token", stockwatchConfig.IexAPIKey)
+	params.Add("format", "json")
+	params.Add("symbols", strings.Join(stockwatchConfig.TrackedStocks, ","))
+	newURL.RawQuery = params.Encode()
+
+	log.Printf("URL: %v", newURL.String())
+
+	// connect and retrieve data from remote source
+	resp, err := httpGet(
+		newURL.String(),
+		[]struct {
+			Name, Value string
+		}{
+			{
+				Name:  "Content-Type",
+				Value: "application/json",
+			},
+		})
+	if err != nil {
+		return iexTop{}, err
+	}
+
+	// unmarshal response
+	var jsonIexTop iexTop
+	if err = json.Unmarshal(resp, &jsonIexTop); err != nil {
+		log.Println(err.Error())
+	}
+
+	return jsonIexTop, nil
 }

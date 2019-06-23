@@ -10,7 +10,9 @@ import (
 )
 
 // httpGet performs a simple get against a remote webserver.
-func httpGet(url string, headers httpHeader) ([]byte, error) {
+func httpGet(url string, headers []struct {
+	Name, Value string
+}) ([]byte, error) {
 	var (
 		err    error          // error handler
 		client http.Client    // http client
