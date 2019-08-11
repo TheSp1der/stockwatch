@@ -12,18 +12,22 @@ import (
 )
 
 // updateStockData manages updates to the reader channel
-func dataReader(sData chan<- iexTop) {
+func dataReader(sData chan<- map[string]iexStock) {
 	var (
 		runTime = time.Now()
-		s       iexTop
+		s       = make(map[string]iexStock)
 	)
 
 	for {
 		if time.Now().After(runTime) || time.Now().Equal(runTime) {
-			var err error
-			if s, err = getPrices(); err != nil {
-				time.Sleep(time.Millisecond * 500)
-				continue
+			for _, stock := range stockwatchConfig.TrackedStocks {
+				i, err := getPrices(stock)
+				if err != nil {
+					time.Sleep(time.Millisecond * 500)
+					continue
+				}
+				log.Printf("Symbol: %v", i.Symbol)
+				s[i.Symbol] = i
 			}
 			// send the updated data to the channel
 			sData <- s
@@ -46,19 +50,19 @@ func dataReader(sData chan<- iexTop) {
 	}
 }
 
-func dataDistributer(newData <-chan iexTop, dataSender chan<- map[string]*stockData) {
+func dataDistributer(newData <-chan map[string]iexStock, dataSender chan<- map[string]*stockData) {
 	sData := make(map[string]*stockData)
 
 	// get company data for stocks
 	for _, stock := range stockwatchConfig.TrackedStocks {
 		log.Printf("Getting company data for: %v", strings.ToUpper(stock))
-		cN, err := getCompanyName(strings.ToUpper(stock))
+		cN, err := getCompanyData(strings.ToUpper(stock))
 		if err != nil {
 			log.Fatal("Unable to obtain the company name for " + strings.ToUpper(stock))
 		}
 
 		sData[strings.ToUpper(stock)] = &stockData{
-			CompanyName: cN,
+			CompanyData: cN,
 		}
 	}
 
@@ -69,9 +73,7 @@ func dataDistributer(newData <-chan iexTop, dataSender chan<- map[string]*stockD
 			// update sData holder
 			for _, stock := range tmp {
 				sData[strings.ToUpper(stock.Symbol)] = &stockData{
-					Ask: stock.AskPrice,
-					Bid: stock.BidPrice,
-					Last: stock.LastSalePrice,
+					StockDetail: stock,
 				}
 			}
 
@@ -132,7 +134,7 @@ func marketStatus() (bool, time.Duration) {
 }
 
 // get company name from ticker
-func getCompanyName(ticker string) (iexCompany, error) {
+func getCompanyData(ticker string) (iexCompany, error) {
 	// prepare the url
 	var newURL url.URL
 	newURL.Scheme = "https"
@@ -163,35 +165,32 @@ func getCompanyName(ticker string) (iexCompany, error) {
 }
 
 // getPrices will get the current stock data.
-func getPrices() (iexTop, error) {
+func getPrices(stock string) (iexStock, error) {
 	// prepare the url
 	var newURL url.URL
 	newURL.Scheme = "https"
 	newURL.Host = "sandbox.iexapis.com"
-	newURL.Path = "v1/tops"
+	newURL.Path = "v1/stock/" + stock + "/quote"
 
 	// url parameters
 	params := newURL.Query()
 	params.Add("token", stockwatchConfig.IexAPIKey)
 	params.Add("format", "json")
-	params.Add("symbols", strings.Join(stockwatchConfig.TrackedStocks, ","))
 	newURL.RawQuery = params.Encode()
-
-	log.Printf("URL: %v", newURL.String())
 
 	// connect and retrieve data from remote source
 	req := httpclient.DefaultClient()
 	req.SetHeader("Content-Type", "application/json")
 	resp, err := req.Get(newURL.String())
 	if err != nil {
-		return iexTop{}, err
+		return iexStock{}, err
 	}
 
 	// unmarshal response
-	var jsonIexTop iexTop
-	if err = json.Unmarshal(resp, &jsonIexTop); err != nil {
+	var jsonIexStock iexStock
+	if err = json.Unmarshal(resp, &jsonIexStock); err != nil {
 		log.Println(err.Error())
 	}
 
-	return jsonIexTop, nil
+	return jsonIexStock, nil
 }

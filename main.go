@@ -65,7 +65,7 @@ func main() {
 		log.Fatal(err.Error())
 	}
 
-	dReader := make(chan iexTop)
+	dReader := make(chan map[string]iexStock)
 	sData := make(chan map[string]*stockData)
 
 	// start processing market data
@@ -75,9 +75,7 @@ func main() {
 	for i := 0; i < 5; i = i + 1 {
 		for k, s := range <-sData {
 			log.Printf("Stock: %v", k)
-			log.Printf("  Bid: %v", s.Bid)
-			log.Printf("  Ask: %v", s.Ask)
-			log.Printf("  Last: %v", s.Last)
+			log.Printf("  LastPrice: %v", s.StockDetail.LatestPrice)
 		}
 
 		time.Sleep(time.Second * 1)
