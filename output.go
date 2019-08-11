@@ -2,18 +2,7 @@ package main
 
 import (
 	"strings"
-	/*
-		"bytes"
-		"log"
-		"sort"
-		"strconv"
-		"strings"
-		"time"
-
-		"text/template"
-
-		"github.com/fatih/color"
-	*/)
+)
 
 // alignLeft will format the table data to the left of the cell
 // and will trim off characters in the event the output is too

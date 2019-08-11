@@ -34,9 +34,10 @@ type outputStructure struct {
 }
 
 type stockData struct {
-	CompanyName  iexCompany
-	Ask          float64
-	Bid          float64
+	CompanyName iexCompany
+	Ask         float64
+	Bid         float64
+	Last        float64
 }
 
 // iexTop struct for the data returned by the iex api.

@@ -7,6 +7,8 @@ import (
 
 	"encoding/json"
 	"net/url"
+
+	"github.com/TheSp1der/httpclient"
 )
 
 // updateStockData manages updates to the reader channel
@@ -69,6 +71,7 @@ func dataDistributer(newData <-chan iexTop, dataSender chan<- map[string]*stockD
 				sData[strings.ToUpper(stock.Symbol)] = &stockData{
 					Ask: stock.AskPrice,
 					Bid: stock.BidPrice,
+					Last: stock.LastSalePrice,
 				}
 			}
 
@@ -143,16 +146,9 @@ func getCompanyName(ticker string) (iexCompany, error) {
 	newURL.RawQuery = params.Encode()
 
 	// connect and retrieve data from remote source
-	resp, err := httpGet(
-		newURL.String(),
-		[]struct {
-			Name, Value string
-		}{
-			{
-				Name:  "Content-Type",
-				Value: "application/json",
-			},
-		})
+	req := httpclient.DefaultClient()
+	req.SetHeader("Content-Type", "application/json")
+	resp, err := req.Get(newURL.String())
 	if err != nil {
 		return iexCompany{}, err
 	}
@@ -184,16 +180,9 @@ func getPrices() (iexTop, error) {
 	log.Printf("URL: %v", newURL.String())
 
 	// connect and retrieve data from remote source
-	resp, err := httpGet(
-		newURL.String(),
-		[]struct {
-			Name, Value string
-		}{
-			{
-				Name:  "Content-Type",
-				Value: "application/json",
-			},
-		})
+	req := httpclient.DefaultClient()
+	req.SetHeader("Content-Type", "application/json")
+	resp, err := req.Get(newURL.String())
 	if err != nil {
 		return iexTop{}, err
 	}

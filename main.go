@@ -1,16 +1,70 @@
 package main
 
-import (
-	"fmt"
-	"log"
-	"os"
-	"strconv"
-	"time"
+//https://iexcloud.io/docs/api/#quote
 
-	"golang.org/x/crypto/ssh/terminal"
+import (
+	"errors"
+	"flag"
+	"log"
+	"regexp"
+	"strings"
+	"time"
 )
 
+func validateStartParameters() error {
+	// verify required data was provided
+	if stockwatchConfig.IexAPIKey == "" {
+		return errors.New("IEX API Key was not provided")
+	} else if cmdLnStocks == "" {
+		return errors.New("No stocks were defined")
+	} else if stockwatchConfig.HTTPPort < 0 && stockwatchConfig.HTTPPort > 65535 {
+		return errors.New("Invalid port given for http server provided")
+	} else if stockwatchConfig.Mail.Port < 0 && stockwatchConfig.Mail.Port > 65534 {
+		return errors.New("Invalid port for mail server provided")
+	}
+
+	return nil
+}
+
+func prepareStartParameters() error {
+	// split provided stocks
+	re := regexp.MustCompile(`(\s+)?,(\s+)?`)
+	stockwatchConfig.TrackedStocks = re.Split(cmdLnStocks, -1)
+
+	// add stocks from investments
+	if len(stockwatchConfig.Investments) > 0 {
+		for _, i := range stockwatchConfig.Investments {
+			stockwatchConfig.TrackedStocks = append(stockwatchConfig.TrackedStocks, strings.ToLower(i.Ticker))
+		}
+	}
+
+	// validate ticker
+	re = regexp.MustCompile(`^[a-z0-9]+$`)
+	for _, value := range stockwatchConfig.TrackedStocks {
+		if !re.Match([]byte(value)) {
+			return errors.New("Stock ticker " + value + " is not a valid ticker name")
+		}
+	}
+
+	// remove duplicate stock tickers
+	stockwatchConfig.TrackedStocks = uniqueString(stockwatchConfig.TrackedStocks)
+
+	log.Println("Initialization complete.")
+
+	return nil
+}
+
 func main() {
+	if err := validateStartParameters(); err != nil {
+		flag.PrintDefaults()
+		log.Fatal(err.Error())
+	}
+
+	if err := prepareStartParameters(); err != nil {
+		flag.PrintDefaults()
+		log.Fatal(err.Error())
+	}
+
 	dReader := make(chan iexTop)
 	sData := make(chan map[string]*stockData)
 
@@ -23,6 +77,7 @@ func main() {
 			log.Printf("Stock: %v", k)
 			log.Printf("  Bid: %v", s.Bid)
 			log.Printf("  Ask: %v", s.Ask)
+			log.Printf("  Last: %v", s.Last)
 		}
 
 		time.Sleep(time.Second * 1)
@@ -53,28 +108,4 @@ func main() {
 			}
 		}
 	*/
-}
-
-func notifyViaMail(sData chan stockData) {
-	for {
-		open, sleepTime := marketStatus()
-		if !open {
-			time.Sleep(time.Duration(time.Minute * 5))
-			if err := basicMailSend(stockwatchConfig.Mail.Host+":"+strconv.Itoa(stockwatchConfig.Mail.Port), stockwatchConfig.Mail.Address, stockwatchConfig.Mail.From, "Stock Alert", displayHTML(<-sData)); err != nil {
-				log.Println(err.Error())
-			}
-		}
-
-		time.Sleep(time.Duration(sleepTime))
-	}
-}
-
-func outputConsole(sData chan stockData) {
-	for {
-		if terminal.IsTerminal(int(os.Stdout.Fd())) {
-			fmt.Printf("\033[0;0H")
-		}
-		fmt.Print(displayTerminal(<-sData))
-		time.Sleep(time.Duration(time.Second * 5))
-	}
 }
