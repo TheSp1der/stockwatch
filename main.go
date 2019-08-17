@@ -5,62 +5,38 @@ package main
 import (
 	"errors"
 	"flag"
-	"log"
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
-func validateStartParameters() error {
-	// verify required data was provided
-	if stockwatchConfig.IexAPIKey == "" {
-		return errors.New("IEX API Key was not provided")
-	} else if cmdLnStocks == "" {
-		return errors.New("No stocks were defined")
-	} else if stockwatchConfig.HTTPPort < 0 && stockwatchConfig.HTTPPort > 65535 {
-		return errors.New("Invalid port given for http server provided")
-	} else if stockwatchConfig.Mail.Port < 0 && stockwatchConfig.Mail.Port > 65534 {
-		return errors.New("Invalid port for mail server provided")
-	}
+// global variables
+var (
+	timeFormat = "2006-01-02 15:04:05"
+	log        = logrus.New()
+)
 
-	return nil
-}
-
-func prepareStartParameters() error {
-	// split provided stocks
-	re := regexp.MustCompile(`(\s+)?,(\s+)?`)
-	stockwatchConfig.TrackedStocks = re.Split(cmdLnStocks, -1)
-
-	// add stocks from investments
-	if len(stockwatchConfig.Investments) > 0 {
-		for _, i := range stockwatchConfig.Investments {
-			stockwatchConfig.TrackedStocks = append(stockwatchConfig.TrackedStocks, strings.ToLower(i.Ticker))
-		}
-	}
-
-	// validate ticker
-	re = regexp.MustCompile(`^[a-z0-9]+$`)
-	for _, value := range stockwatchConfig.TrackedStocks {
-		if !re.Match([]byte(value)) {
-			return errors.New("Stock ticker " + value + " is not a valid ticker name")
-		}
-	}
-
-	// remove duplicate stock tickers
-	stockwatchConfig.TrackedStocks = uniqueString(stockwatchConfig.TrackedStocks)
-
-	log.Println("Initialization complete.")
-
-	return nil
+// init configures the parameters the process needs to run.
+func init() {
+	// set default log level
+	log.SetLevel(logrus.WarnLevel)
 }
 
 func main() {
-	if err := validateStartParameters(); err != nil {
+	// read command line options
+	swConfig, investments, stocks := readFlags()
+
+	// display current configuration
+	displayCurrentConfig(swConfig, stocks)
+
+	if err := validateStartParameters(swConfig, stocks); err != nil {
 		flag.PrintDefaults()
-		log.Fatal(err.Error())
+		log.Fatal(err)
 	}
 
-	if err := prepareStartParameters(); err != nil {
+	if swConfig, err := prepareStartParameters(swConfig, stocks); err != nil {
 		flag.PrintDefaults()
 		log.Fatal(err.Error())
 	}
@@ -74,8 +50,8 @@ func main() {
 
 	for i := 0; i < 5; i = i + 1 {
 		for k, s := range <-sData {
-			log.Printf("Stock: %v", k)
-			log.Printf("  LastPrice: %v", s.StockDetail.LatestPrice)
+			log.Infof("Stock: %v", k)
+			log.Infof("  LastPrice: %v", s.StockDetail.LatestPrice)
 		}
 
 		time.Sleep(time.Second * 1)
@@ -106,4 +82,47 @@ func main() {
 			}
 		}
 	*/
+}
+
+func validateStartParameters(config Configuration, stocks string) (err error) {
+	// verify required data was provided
+	if config.IexAPIKey == "" {
+		return errors.New("IEX API Key was not provided")
+	} else if stocks == "" {
+		return errors.New("No stocks were defined")
+	} else if config.HTTPPort < 0 && config.HTTPPort > 65535 {
+		return errors.New("Invalid port given for http server provided")
+	} else if config.Mail.Port < 0 && config.Mail.Port > 65534 {
+		return errors.New("Invalid port for mail server provided")
+	}
+
+	return
+}
+
+func prepareStartParameters(config Configuration, stocks string) (Configuration, error) {
+	// split provided stocks
+	re := regexp.MustCompile(`(\s+)?,(\s+)?`)
+	config.TrackedStocks = re.Split(stocks, -1)
+
+	// add stocks from investments
+	if len(config.Investments) > 0 {
+		for _, i := range config.Investments {
+			config.TrackedStocks = append(config.TrackedStocks, strings.ToLower(i.Ticker))
+		}
+	}
+
+	// validate ticker
+	re = regexp.MustCompile(`^[a-z0-9]+$`)
+	for _, value := range config.TrackedStocks {
+		if !re.Match([]byte(value)) {
+			return config, errors.New("Stock ticker " + value + " is not a valid ticker name")
+		}
+	}
+
+	// remove duplicate stock tickers
+	config.TrackedStocks = uniqueString(config.TrackedStocks)
+
+	log.Info("Initialization complete.")
+
+	return config, nil
 }

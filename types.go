@@ -9,6 +9,7 @@ type Configuration struct {
 	HTTPPort      int
 	IexAPIKey     string
 	PollFrequency int
+	LogLevel      string
 }
 
 type configInvestments []configInvestment
