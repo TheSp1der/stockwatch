@@ -20,7 +20,7 @@ func readFlags() (config Configuration, cmdLnInvestment configInvestments, cmdLn
 	flag.StringVar(&config.Mail.From, "mail-from", getEnvString("EMAIL_FROM", "noreply@localhost"), "(EMAIL_FROM)\nAddress the message will be sent from.")
 	// read output options
 	flag.BoolVar(&config.NoConsole, "no-console", getEnvBool("NO_CONSOLE", true), "(NO_CONSOLE)\nDon't display stock data in the console.")
-	flag.IntVar(&config.HTTPPort, "web-port", getEnvInt("WEB_PORT", 0), "(WEB_PORT)\nWeb server listen port.")
+	flag.IntVar(&config.HTTPPort, "web-port", getEnvInt("WEB_PORT", 8080), "(WEB_PORT)\nWeb server listen port.")
 	// IEX connection options
 	flag.StringVar(&config.IexAPIKey, "api-key", getEnvString("API_KEY", ""), "(API_KEY)\nIEX API Key for data retrieval.")
 	flag.IntVar(&config.PollFrequency, "refresh", getEnvInt("REFRESH", 2), "(REFRESH)\nTime in seconds between stock data retrieval.")
