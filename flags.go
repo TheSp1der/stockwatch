@@ -2,13 +2,16 @@ package main
 
 import (
 	"flag"
+	"fmt"
+	"strconv"
+	"strings"
 )
 
-func readFlags() (config Configuration, cmdLnInvestments configInvestments, cmdLnStocks string) {
+func readFlags() (config Configuration, cmdLnInvestment configInvestments, cmdLnStocks string) {
 	// read log out options
 	flag.StringVar(&config.LogLevel, "log", getEnvString("LOG_LEVEL", "warn"), "(LOG_LEVEL)\nVerbosity of log output.")
 	// read stock options & lists
-	flag.Var(&cmdLnInvestments, "invest", "Formatted investment in the form of \"Ticker,Quantity,Price\".")
+	flag.Var(&cmdLnInvestment, "invest", "Formatted investment in the form of \"Ticker,Quantity,Price\".")
 	flag.StringVar(&cmdLnStocks, "ticker", getEnvString("TICKERS", ""), "(TICKERS)\nComma saperated list of stocks to report.")
 	// read mail configuration options
 	flag.StringVar(&config.Mail.Address, "mail-to", getEnvString("EMAIL_TO", ""), "(EMAIL_TO)\nDestination e-mail address that will receive the end of day summary.")
@@ -38,4 +41,34 @@ func displayCurrentConfig(config Configuration, stocks string) {
 	log.Infof("Configuration value for %v= %v", "WEB_PORT   ", config.HTTPPort)
 	log.Infof("Configuration value for %v= %v", "API_KEY    ", config.IexAPIKey)
 	log.Infof("Configuration value for %v= %v", "REFRESH    ", config.PollFrequency)
+}
+
+// String format flag value.
+func (i *configInvestments) String() string {
+	return fmt.Sprint(*i)
+}
+
+// Set set flag value.
+func (i *configInvestments) Set(value string) error {
+	if len(strings.Split(value, ",")) == 3 {
+		inv := strings.Split(value, ",")
+
+		quantity, err := strconv.ParseFloat(inv[1], 32)
+		if err != nil {
+			return err
+		}
+
+		price, err := strconv.ParseFloat(inv[2], 32)
+		if err != nil {
+			return err
+		}
+
+		*i = append(*i, configInvestment{
+			Ticker:   inv[0],
+			Quantity: quantity,
+			Price:    price,
+		})
+	}
+
+	return nil
 }

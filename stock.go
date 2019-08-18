@@ -11,7 +11,7 @@ import (
 )
 
 // updateStockData manages updates to the reader channel
-func dataReader(sData chan<- map[string]iexStock) {
+func dataReader(sData chan<- map[string]iexStock, stockwatchConfig Configuration) {
 	var (
 		runTime = time.Now()
 		s       = make(map[string]iexStock)
@@ -20,7 +20,7 @@ func dataReader(sData chan<- map[string]iexStock) {
 	for {
 		if time.Now().After(runTime) || time.Now().Equal(runTime) {
 			for _, stock := range stockwatchConfig.TrackedStocks {
-				i, err := getPrices(stock)
+				i, err := getPrices(stock, stockwatchConfig)
 				if err != nil {
 					time.Sleep(time.Millisecond * 500)
 					continue
@@ -49,13 +49,13 @@ func dataReader(sData chan<- map[string]iexStock) {
 	}
 }
 
-func dataDistributer(newData <-chan map[string]iexStock, dataSender chan<- map[string]*stockData) {
+func dataDistributer(newData <-chan map[string]iexStock, dataSender chan<- map[string]*stockData, stockwatchConfig Configuration) {
 	sData := make(map[string]*stockData)
 
 	// get company data for stocks
 	for _, stock := range stockwatchConfig.TrackedStocks {
 		log.Printf("Getting company data for: %v", strings.ToUpper(stock))
-		cN, err := getCompanyData(strings.ToUpper(stock))
+		cN, err := getCompanyData(strings.ToUpper(stock), stockwatchConfig)
 		if err != nil {
 			log.Fatal("Unable to obtain the company name for " + strings.ToUpper(stock))
 		}
@@ -133,7 +133,7 @@ func marketStatus() (bool, time.Duration) {
 }
 
 // get company name from ticker
-func getCompanyData(ticker string) (iexCompany, error) {
+func getCompanyData(ticker string, stockwatchConfig Configuration) (iexCompany, error) {
 	// prepare the url
 	var newURL url.URL
 	newURL.Scheme = "https"
@@ -164,7 +164,7 @@ func getCompanyData(ticker string) (iexCompany, error) {
 }
 
 // getPrices will get the current stock data.
-func getPrices(stock string) (iexStock, error) {
+func getPrices(stock string, stockwatchConfig Configuration) (iexStock, error) {
 	// prepare the url
 	var newURL url.URL
 	newURL.Scheme = "https"

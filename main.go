@@ -31,12 +31,14 @@ func main() {
 	// display current configuration
 	displayCurrentConfig(swConfig, stocks)
 
-	if err := validateStartParameters(swConfig, stocks); err != nil {
+	err := validateStartParameters(swConfig, stocks)
+	if err != nil {
 		flag.PrintDefaults()
 		log.Fatal(err)
 	}
 
-	if swConfig, err := prepareStartParameters(swConfig, stocks); err != nil {
+	swConfig, err = prepareStartParameters(swConfig, stocks)
+	if err != nil {
 		flag.PrintDefaults()
 		log.Fatal(err.Error())
 	}
@@ -45,8 +47,8 @@ func main() {
 	sData := make(chan map[string]*stockData)
 
 	// start processing market data
-	go dataReader(dReader)
-	go dataDistributer(dReader, sData)
+	go dataReader(dReader, swConfig)
+	go dataDistributer(dReader, sData, swConfig)
 
 	for i := 0; i < 5; i = i + 1 {
 		for k, s := range <-sData {
@@ -56,6 +58,8 @@ func main() {
 
 		time.Sleep(time.Second * 1)
 	}
+
+	log.Info(investments)
 
 	/*
 		// start outputting to the console
@@ -90,9 +94,9 @@ func validateStartParameters(config Configuration, stocks string) (err error) {
 		return errors.New("IEX API Key was not provided")
 	} else if stocks == "" {
 		return errors.New("No stocks were defined")
-	} else if config.HTTPPort < 0 && config.HTTPPort > 65535 {
+	} else if config.HTTPPort <= 0 || config.HTTPPort > 65535 {
 		return errors.New("Invalid port given for http server provided")
-	} else if config.Mail.Port < 0 && config.Mail.Port > 65534 {
+	} else if config.Mail.Port <= 0 || config.Mail.Port > 65535 {
 		return errors.New("Invalid port for mail server provided")
 	}
 

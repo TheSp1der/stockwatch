@@ -1,10 +1,8 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"strconv"
-	"strings"
 )
 
 // getEnvString returns string from environment variable.
@@ -76,34 +74,4 @@ func uniqueString(inputString []string) []string {
 		}
 	}
 	return list
-}
-
-// String format flag value.
-func (i *configInvestments) String() string {
-	return fmt.Sprint(*i)
-}
-
-// Set set flag value.
-func (i *configInvestments) Set(value string) error {
-	if len(strings.Split(value, ",")) == 3 {
-		var (
-			err      error
-			quantity float64
-			price    float64
-		)
-
-		inv := strings.Split(value, ",")
-		if quantity, err = strconv.ParseFloat(inv[1], 32); err != nil {
-			return err
-		}
-		if price, err = strconv.ParseFloat(inv[2], 32); err != nil {
-			return err
-		}
-		stockwatchConfig.Investments = append(stockwatchConfig.Investments, configInvestment{
-			Ticker:   inv[0],
-			Quantity: quantity,
-			Price:    price,
-		})
-	}
-	return nil
 }
