@@ -48,7 +48,7 @@ func getEnvInt(env string, def int) (ret int) {
 	return
 }
 
-func getFloat64(env string, def float64) (ret float64) {
+func getEnvFloat64(env string, def float64) (ret float64) {
 	val := os.Getenv(env)
 
 	if len(val) == 0 {
