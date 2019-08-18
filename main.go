@@ -18,15 +18,21 @@ var (
 	log        = logrus.New()
 )
 
-// init configures the parameters the process needs to run.
-func init() {
-	// set default log level
-	log.SetLevel(logrus.WarnLevel)
-}
-
 func main() {
 	// read command line options
 	swConfig, investments, stocks := readFlags()
+
+	// set debug level
+	switch strings.ToLower(swConfig.LogLevel) {
+	case "trace":
+		log.SetLevel(logrus.TraceLevel)
+	case "debug":
+		log.SetLevel(logrus.DebugLevel)
+	case "info", "informatiion":
+		log.SetLevel(logrus.InfoLevel)
+	default:
+		log.SetLevel(logrus.WarnLevel)
+	}
 
 	// display current configuration
 	displayCurrentConfig(swConfig, stocks)
